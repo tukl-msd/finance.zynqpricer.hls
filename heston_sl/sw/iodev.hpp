@@ -15,13 +15,12 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-
 class IODev {
 public:
-	IODev(int base_addr) {
+	IODev(unsigned base_addr, unsigned size) {
 		unsigned page_size = sysconf(_SC_PAGESIZE);
 		/* Open /dev/mem file */
-		fd = open ("/dev/mem", O_RDWR);
+		fd = open("/dev/mem", O_RDWR);
 		if (fd < 1) {
 			perror("Could not open /dev/mem");
 			exit(-1);
@@ -29,7 +28,8 @@ public:
 		/* mmap the device into memory */
 		unsigned page_addr = (base_addr & (~(page_size-1)));
 		page_offset = base_addr - page_addr;
-		ptr = mmap(NULL, page_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
+		unsigned mem_size = base_addr + size - page_offset;
+		ptr = mmap(NULL, mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
 			fd, page_addr);
 	}
 

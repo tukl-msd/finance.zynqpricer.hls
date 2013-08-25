@@ -11,11 +11,12 @@
 #include <iostream>
 
 // address of AXI Stream FIFO
-const int AXI_FIFO_BASE_ADDR   = 0x4AA00000;
+const unsigned AXI_FIFO_BASE_ADDR   = 0x4AA00000;
+const unsigned AXI_FIFO_SIZE        = 0x00001000;
 
 int main(int argc, char *argv[])
 {
-	IODev axi_ctrl(AXI_FIFO_BASE_ADDR);
+	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Receive Data FIFO Occupancy (RDFO)
 	volatile unsigned &rdfo = *((unsigned*)axi_ctrl.get_dev_ptr(0x1C));
 	// Receive Data FIFO Data (RDFD)

@@ -14,11 +14,12 @@
 #include <cstring>
 
 // address of Random Number Generator
-const int AXI_RNG_BASE_ADDR    = 0x43C00000;
+const unsigned AXI_RNG_BASE_ADDR = 0x43C00000;
+const unsigned AXI_RNG_SIZE      = 0x00002000;
 
 int main(int argc, char *argv[]) {
 	// get device pointers
-	IODev axi_rng(AXI_RNG_BASE_ADDR);
+	IODev axi_rng(AXI_RNG_BASE_ADDR, AXI_RNG_SIZE);
 	volatile unsigned &rng_ctrl = *((unsigned*)axi_rng.get_dev_ptr(0x00));
 	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
 

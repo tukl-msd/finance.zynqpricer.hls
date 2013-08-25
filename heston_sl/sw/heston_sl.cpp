@@ -26,11 +26,14 @@ const useconds_t BUSY_WAIT_NANO_SLEEP_TIME = 0; // nano seconds
 const useconds_t BUSY_WAIT_MICRO_SLEEP_TIME = 50; // micro seconds
 
 // address of AXI Stream FIFO
-const int AXI_FIFO_BASE_ADDR   = 0x4AA00000;
-// address of Heston Kernel
-const int AXI_HESTON_BASE_ADDR = 0x43C10000;
+const unsigned AXI_FIFO_BASE_ADDR   = 0x4AA00000;
+const unsigned AXI_FIFO_SIZE        = 0x00001000;
 // address of Random Number Generator
-const int AXI_RNG_BASE_ADDR    = 0x43C00000;
+const unsigned AXI_RNG_BASE_ADDR    = 0x43C00000;
+const unsigned AXI_RNG_SIZE         = 0x00002000;
+// address of Heston Kernel
+const unsigned AXI_HESTON_BASE_ADDR = 0x43C10000;
+const unsigned AXI_HESTON_SIZE      = 0x00000080;
 
 
 // sleep for nano_sec micro seconds with busy loop
@@ -46,7 +49,7 @@ void nano_sleep(long nano_sec) {
 
 
 void call_write_thread(const unsigned cnt, const bool do_busy_wait) {
-	IODev axi_ctrl(AXI_FIFO_BASE_ADDR);
+	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Transmit Data FIFO Vacancy (TDFV)
 	volatile unsigned &tdfv = *((unsigned*)axi_ctrl.get_dev_ptr(0x0C));
 	// Transmit Data FIFO Data (TDFD)
@@ -78,7 +81,7 @@ void call_write_thread(const unsigned cnt, const bool do_busy_wait) {
 
 
 void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
-	IODev axi_ctrl(AXI_FIFO_BASE_ADDR);
+	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Receive Data FIFO Occupancy (RDFO)
 	volatile unsigned &rdfo = *((unsigned*)axi_ctrl.get_dev_ptr(0x1C));
 	// Receive Data FIFO Data (RDFD)
@@ -144,7 +147,7 @@ float heston_sl_hw(
 		uint32_t path_cnt)
 {
 	// get device pointers
-	IODev axi_heston(AXI_HESTON_BASE_ADDR);
+	IODev axi_heston(AXI_HESTON_BASE_ADDR, AXI_HESTON_SIZE);
 	volatile unsigned &acc_ctrl = *((unsigned*)axi_heston.get_dev_ptr(0x00));
 
 	// make sure heston accelerator is not running
@@ -155,7 +158,7 @@ float heston_sl_hw(
 	}
 
 	// make sure random number generator is running
-	IODev axi_rng(AXI_RNG_BASE_ADDR);
+	IODev axi_rng(AXI_RNG_BASE_ADDR, AXI_RNG_SIZE);
 	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
 	if (rng_idle) {
 		std::cerr << "Start the Random Number generator before running"

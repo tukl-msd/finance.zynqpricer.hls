@@ -11,7 +11,7 @@ heston_sl: heston_sl.cpp
 read_fifo: read_fifo.cpp
 	g++ $(FLAGS) $^ -o $@
 	
-read_rng: read_rng.cpp
+read_rng: read_rng.o mt19937ar.o
 	g++ $(FLAGS) $^ -o $@
 
 %.o: %.cpp
