@@ -7,6 +7,12 @@ init_rng: init_rng.o mt19937ar.o
 
 heston_sl: heston_sl.cpp
 	g++ $(FLAGS) $^ -o $@ -lpthread
+
+read_fifo: read_fifo.cpp
+	g++ $(FLAGS) $^ -o $@
 	
+read_rng: read_rng.cpp
+	g++ $(FLAGS) $^ -o $@
+
 %.o: %.cpp
 	g++ $(FLAGS) -c $< -o $@

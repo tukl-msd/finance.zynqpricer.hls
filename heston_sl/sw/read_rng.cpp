@@ -8,8 +8,6 @@
 
 #include "iodev.hpp"
 
-#include "mt19937ar.h"
-
 #include <iostream>
 #include <cstring>
 
@@ -22,26 +20,23 @@ int main(int argc, char *argv[]) {
 	volatile unsigned &rng_ctrl = *((unsigned*)axi_rng.get_dev_ptr(0x00));
 	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
 
-	// exit if rng is already running
-	if (!rng_idle) {
-		std::cerr << "ERROR: Random number generator is already running."
-				<< std::endl;
-		exit(EXIT_FAILURE);
-	}
-	
 	// get full Mersenne Twister state
 	uint32_t mt_state[624];
-	init_genrand(0);
-	generate_numbers();
-	get_mt_state(mt_state);
 
 	// send state to hardware rng
-	memcpy(axi_rng.get_dev_ptr(0x1000), mt_state, sizeof(mt_state));
-	
-	// start hardware rng
-	rng_ctrl = 1;
+	memcpy(mt_state, axi_rng.get_dev_ptr(0x1000), sizeof(mt_state));
 
-	std::cout << "Random Number Generator has been started." << std::endl;
+	// print rng state
+	for (int i = 0; i < 624; ++i) {
+		std::cout << std::hex << i << " \t- " << mt_state[i] << std::endl;
+	}
+
+	// print status information
+	std::cout << "Current rng_ctrl: " << std::hex << rng_ctrl << std::endl;
+	if (rng_idle)
+		std::cout << "Random number generator is idle." << std::endl;
+	else
+		std::cout << "Random number generator running." << std::endl;
 
 	return 0;
 }

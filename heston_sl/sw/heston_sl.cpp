@@ -150,7 +150,7 @@ float heston_sl_hw(
 	// make sure heston accelerator is not running
 	bool acc_idle = acc_ctrl & 0x4;
 	if (!acc_idle) {
-		std::cerr << "Heston accelerator already running." << std::endl;
+		std::cerr << "Heston accelerator is already running." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -168,7 +168,7 @@ float heston_sl_hw(
 	std::thread t_read(call_read_thread, 
 		path_cnt, (unsigned*) prices, false);
 
-	// write heston parameters
+	// define heston hw parameters
 	float step_size = time_to_maturity / step_cnt;
 	float sqrt_step_size = std::sqrt(step_size);
 	HestonParamsHW params_hw = {
@@ -186,12 +186,12 @@ float heston_sl_hw(
 		sqrt_step_size,
 		(float) BARRIER_HIT_CORRECTION * sqrt_step_size,
 		path_cnt};
-	for (unsigned i = 0x24, j = 0; i <= 0x7c; i = i + 8, ++j) {
+
+	// send parameters to accelerator, 64 bit aligned
+	for (unsigned i = 0x14, j = 0; i <= 0x7c; i = i + 8, ++j) {
 		*((unsigned*)axi_heston.get_dev_ptr(i)) = 
-			*((unsigned*)&params_hw + j);
-		std::cout << std::hex << i << " " << j << std::endl;
+				*((unsigned*)&params_hw + j);
 	}
-//	*((HestonParamsHW*)axi_heston.get_dev_ptr(0x24)) = params_hw;
 
 	// start heston accelerator
 	acc_ctrl = 1;
@@ -199,7 +199,7 @@ float heston_sl_hw(
 	std::cout << acc_ctrl << std::endl;
 	std::cout << acc_ctrl << std::endl;
 	
-	for (unsigned i = 0x24; i <= 0x7c; i = i + 4) {
+	for (unsigned i = 0x14; i <= 0x7c; i = i + 8) {
 		void *hw_data = axi_heston.get_dev_ptr(i);
 		std::cout << "hw: 0x" << std::hex << i << ": " << std::dec;
 		std::cout << *((uint32_t*)hw_data) << " - " 

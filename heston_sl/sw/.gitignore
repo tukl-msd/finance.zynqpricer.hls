@@ -1,2 +1,4 @@
 heston_sl
 init_rng
+read_fifo
+read_rng
