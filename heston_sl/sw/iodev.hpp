@@ -28,9 +28,15 @@ public:
 		/* mmap the device into memory */
 		unsigned page_addr = (base_addr & (~(page_size-1)));
 		page_offset = base_addr - page_addr;
-		unsigned mem_size = base_addr + size - page_offset;
+		unsigned mem_size = base_addr + size - page_addr;
+		/* round mem_size up to next page_size */
+		mem_size = ((mem_size - 1) / page_size + 1) * page_size;
 		ptr = mmap(NULL, mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
 			fd, page_addr);
+		if (ptr == MAP_FAILED) {
+			perror("Could not map memory");
+			exit(-1);
+		}
 	}
 
 	~IODev() {

@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 	unsigned avail = rdfo & 0x7fffffff;
 	for (unsigned i = 0; i < avail; ++i) {
 		unsigned data = rdfd;
-		std::cout << i << ": \t" << data << " - " << (float)data << 
-				std::endl;
+		std::cout << i << ": \t" << data << " \t " << 
+			reinterpret_cast<float&>(data) << std::endl;
 	}
 	std::cout << "Read " << avail << " words." << std::endl;
 	avail = rdfo & 0x7fffffff;

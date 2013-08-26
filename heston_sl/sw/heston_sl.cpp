@@ -80,6 +80,7 @@ void call_write_thread(const unsigned cnt, const bool do_busy_wait) {
 }
 
 
+//TODO(brugger): use void* for out and cnt in bytes instead of sizeof(unsigned)
 void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
 	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Receive Data FIFO Occupancy (RDFO)
@@ -97,7 +98,6 @@ void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
 				usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
 		}
 		out[i] = rdfd;
-		std::cout << out[i] << std::endl;
 		--avail;
 	}
 }
@@ -169,7 +169,7 @@ float heston_sl_hw(
 	// setup read thread
 	float prices[path_cnt];
 	std::thread t_read(call_read_thread, 
-		path_cnt, (unsigned*) prices, false);
+		path_cnt, reinterpret_cast<unsigned*>(prices), false);
 
 	// define heston hw parameters
 	float step_size = time_to_maturity / step_cnt;
@@ -199,6 +199,7 @@ float heston_sl_hw(
 	// start heston accelerator
 	acc_ctrl = 1;
 	
+	/* debug output
 	std::cout << acc_ctrl << std::endl;
 	std::cout << acc_ctrl << std::endl;
 	
@@ -208,6 +209,7 @@ float heston_sl_hw(
 		std::cout << *((uint32_t*)hw_data) << " - " 
 				<< *((float*)hw_data) << std::endl;
 	}
+	*/
 	
 	// wait until all data is available
 	t_read.join();
@@ -262,7 +264,7 @@ int main(int argc, char *argv[])
 	float lower_barrier_value = 90;
 	float upper_barrier_value = 110;
 	// simulation params
-	uint32_t step_cnt = 256;
+	uint32_t step_cnt = 1000;
 	uint32_t path_cnt = cmd_path_cnt; // 100;
 
 	// benchmark
@@ -275,11 +277,14 @@ int main(int argc, char *argv[])
 		upper_barrier_value, step_cnt, path_cnt);
 	auto end = std::chrono::steady_clock::now();
 
-	std::cout << "CPU: "; print_duration(start_cpu, start_acc, path_cnt);
-	std::cout << "ACC: "; print_duration(start_acc, end, path_cnt);
-
 	float ref_price = 0.74870;
 	float ref_price_precision = 0.00001;
+
+	std::cout << "REF: result = " << ref_price << std::endl;
+//	std::cout << "CPU: result = " << result_cpu << std::endl;
+	std::cout << "CPU: "; print_duration(start_cpu, start_acc, path_cnt);
+	std::cout << "ACC: result = " << result_acc << std::endl;
+	std::cout << "ACC: "; print_duration(start_acc, end, path_cnt);
 
 	std::cout << "done" << std::endl;
 	return 0;

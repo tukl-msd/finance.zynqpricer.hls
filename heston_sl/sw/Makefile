@@ -1,11 +1,12 @@
-FLAGS = -std=c++11 -Ofast -march=native
+FLAGS = -g -std=c++11
+#-Ofast -march=native
 
 all: init_rng heston_sl
 
 init_rng: init_rng.o mt19937ar.o
 	g++ $(FLAGS) $^ -o $@
 
-heston_sl: heston_sl.cpp
+heston_sl: heston_sl.cpp iodev.hpp
 	g++ $(FLAGS) $^ -o $@ -lpthread
 
 read_fifo: read_fifo.cpp
