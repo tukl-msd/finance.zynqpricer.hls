@@ -8,6 +8,8 @@
 
 #include "iodev.hpp"
 
+#include "json/json.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,6 +22,7 @@
 #include <chrono>
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 const unsigned PACKET_SIZE = 500;
 const useconds_t BUSY_WAIT_NANO_SLEEP_TIME = 0; // nano seconds
@@ -190,6 +193,19 @@ struct HestonParamsHW {
 };
 
 
+Json::Value read_params(char *filename) {
+	std::ifstream file(filename);
+	Json::Value root;
+	Json::Reader reader;
+	if (!reader.parse(file, root)) {
+		std::cerr << "Failed to parse parameter file" << std::endl
+				<< reader.getFormattedErrorMessages();
+		exit(-1);
+	}
+	return root;
+}
+
+
 float heston_sl_hw(
 		// call option
 		float spot_price,
@@ -281,27 +297,30 @@ void array_stream_cpu(double a, double b, double *out, unsigned out_len) {
 int main(int argc, char *argv[])
 {
 	if (argc != 2) {
-		std::cout << "Usage: " << argv[0] << " <path_cnt>" << std::endl;
+		std::cout << "Usage: " << argv[0] << " params.json" << std::endl;
 		return -1;
 	}
-	uint32_t cmd_path_cnt = atoi(argv[1]);
+	Json::Value params = read_params(argv[1]);
 
 	// heston params
-	float spot_price = 100;
-	float reversion_rate = 0.5;
-	float long_term_avg_vola = 0.04;
-	float vol_of_vol = 1;
-	float riskless_rate = 0;
-	float vola_0 = 0.04;
-	float correlation = 0;
-	float time_to_maturity = 1;
-	float strike_price = 100;
+	auto heston = params["heston"];
+	float spot_price = heston["spot_price"].asFloat();
+	float reversion_rate = heston["reversion_rate"].asFloat();
+	float long_term_avg_vola = heston["long_term_avg_vola"].asFloat();
+	float vol_of_vol = heston["vol_of_vol"].asFloat();
+	float riskless_rate = heston["riskless_rate"].asFloat();
+	float vola_0 = heston["vola_0"].asFloat();
+	float correlation = heston["correlation"].asFloat();
+	float time_to_maturity = heston["time_to_maturity"].asFloat();
+	float strike_price = heston["strike_price"].asFloat();
 	// both knowckout
-	float lower_barrier_value = 90;
-	float upper_barrier_value = 110;
+	auto barrier = params["barrier values"];
+	float lower_barrier_value = barrier["lower"].asFloat();
+	float upper_barrier_value = barrier["upper"].asFloat();
 	// simulation params
-	uint32_t step_cnt = 1000;
-	uint32_t path_cnt = cmd_path_cnt; // 100;
+	auto simulation = params["simulation"];
+	uint32_t step_cnt = simulation["step_cnt"].asUInt();
+	uint32_t path_cnt = simulation["path_cnt"].asUInt();
 
 	// benchmark
 	auto start_cpu = std::chrono::steady_clock::now();
@@ -313,8 +332,10 @@ int main(int argc, char *argv[])
 		upper_barrier_value, step_cnt, path_cnt);
 	auto end = std::chrono::steady_clock::now();
 
-	float ref_price = 0.74870;
-	float ref_price_precision = 0.00001;
+	// reference values
+	auto ref = params["reference"];
+	float ref_price = ref["price"].asFloat();
+	float ref_price_precision = ref["precision"].asFloat();
 
 	std::cout << "REF: result = " << ref_price << std::endl;
 //	std::cout << "CPU: result = " << result_cpu << std::endl;
