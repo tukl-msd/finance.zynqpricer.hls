@@ -12,17 +12,26 @@
 
 #include <iostream>
 #include <cmath>
+#include <random>
 
+#define PI 3.141592653589793
 
+std::random_device rd;
+std::mt19937 rng(rd());
+std::normal_distribution<calc_t> g_rn;
 
 
 void box_muller(calc_t &z0, calc_t &z1) {
+	/*
 	calc_t u1 = (genrand_int32() + 1) * (calc_t)(1.0 / 4294967296.0);
-	calc_t u2 = (genrand_int32() + 1) * (calc_t)(2.0 * M_PI / 4294967296.0);
+	calc_t u2 = (genrand_int32() + 1) * (calc_t)(2.0 * PI / 4294967296.0);
 
 	calc_t r = std::sqrt(std::log(u1) * (calc_t)(-2));
 	z0 = r * std::cos(u2);
 	z1 = r * std::sin(u2);
+	*/
+	z0 = g_rn(rng);
+	z1 = g_rn(rng);
 }
 
 
@@ -64,7 +73,7 @@ calc_t heston_sl_cpu(
 	calc_t log_lower_barrier_value = std::log(lower_barrier_value);
 	calc_t log_upper_barrier_value = std::log(upper_barrier_value);
 	calc_t half_step_size = step_size / 2;
-	calc_t barrier_correction_factor = BARRIER_HIT_CORRECTION * 
+	calc_t barrier_correction_factor = (calc_t)BARRIER_HIT_CORRECTION * 
 			sqrt_step_size;
 	// evaluate paths
 	double result = 0; // final result
@@ -108,6 +117,6 @@ calc_t heston_sl_cpu(
 	}
 	// payoff price and return
 	result *= std::exp(-riskless_rate * time_to_maturity) / path_cnt;
-	return result;
+	return (calc_t)result;
 }
 
