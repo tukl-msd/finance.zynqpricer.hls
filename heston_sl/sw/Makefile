@@ -1,11 +1,17 @@
-FLAGS = -std=c++11 -Ofast -march=native -I .
+FLAGS = -I . -std=c++11 -Ofast -march=native
 
-all: init_rng heston_sl
+all: init_rng run_both
 
 init_rng: init_rng.o mt19937ar.o
 	g++ $(FLAGS) $^ -o $@
 
-heston_sl: heston_sl.cpp iodev.hpp jsoncpp.o
+run_cpu: run_cpu.cpp heston_sl_cpu.o jsoncpp.o mt19937ar.o
+	g++ $(FLAGS) $^ -o $@ -lpthread
+
+run_acc: run_acc.cpp heston_sl_acc.o jsoncpp.o 
+	g++ $(FLAGS) $^ -o $@ -lpthread
+
+run_both: run_both.cpp heston_sl_acc.o heston_sl_cpu.o jsoncpp.o mt19937ar.o
 	g++ $(FLAGS) $^ -o $@ -lpthread
 
 read_fifo: read_fifo.cpp
