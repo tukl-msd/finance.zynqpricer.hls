@@ -48,6 +48,16 @@ void nano_sleep(long nano_sec) {
 }
 
 
+void print_duration(std::chrono::steady_clock::time_point start, 
+		std::chrono::steady_clock::time_point end, unsigned cnt) {
+	double duration = std::chrono::duration<double>(
+		end - start).count();
+	std::cout << "Calculated " << cnt << " values in " << duration
+		<< " seconds (" << cnt / duration << " values / sec)"
+		<< std::endl;
+}
+
+
 void call_write_thread(const unsigned cnt, const bool do_busy_wait) {
 	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Transmit Data FIFO Vacancy (TDFV)
@@ -101,6 +111,58 @@ void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
 		--avail;
 	}
 }
+
+
+template <typename T>
+class read_iterator {
+public:
+	read_iterator(const unsigned cnt, bool do_busy_wait=false) 
+		: cnt(cnt), 
+		  do_busy_wait(do_busy_wait), 
+		  axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE)
+	{
+		// Receive Data FIFO Occupancy (RDFO)
+		rdfo = (unsigned*)axi_ctrl.get_dev_ptr(0x1C);
+		// Receive Data FIFO Data (RDFD)
+		rdfd = (T*)axi_ctrl.get_dev_ptr(0x20);
+		if (sizeof(T) != 4) {
+			std::cerr << "ERROR: only sizeof(T) = 4 supported" 
+					<< std::endl;
+			exit(-1);
+		}
+		
+	}
+
+	bool next(T &out) {
+		if (i < cnt) {
+			while (avail == 0) {
+				avail = (*rdfo) & 0x7fffffff;
+				if (do_busy_wait)
+					nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
+				else
+					usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
+			}
+			--avail;
+			++i;
+			out = *rdfd;
+			return true;
+		} else {
+			return false;
+		}
+	}
+private:
+	IODev axi_ctrl;
+	unsigned cnt;
+	bool do_busy_wait;
+	// Receive Data FIFO Occupancy (RDFO)
+	volatile unsigned *rdfo;
+	// Receive Data FIFO Data (RDFD)
+	volatile T *rdfd;
+
+	unsigned avail = 0;
+	unsigned i = 0;
+};
+
 
 // continuity correction, see Broadie, Glasserman, Kou (1997)
 #define BARRIER_HIT_CORRECTION 0.5826
@@ -166,11 +228,6 @@ float heston_sl_hw(
 		exit(EXIT_FAILURE);
 	}
 	
-	// setup read thread
-	float prices[path_cnt];
-	std::thread t_read(call_read_thread, 
-		path_cnt, reinterpret_cast<unsigned*>(prices), false);
-
 	// define heston hw parameters
 	float step_size = time_to_maturity / step_cnt;
 	float sqrt_step_size = std::sqrt(step_size);
@@ -199,25 +256,14 @@ float heston_sl_hw(
 	// start heston accelerator
 	acc_ctrl = 1;
 	
-	/* debug output
-	std::cout << acc_ctrl << std::endl;
-	std::cout << acc_ctrl << std::endl;
-	
-	for (unsigned i = 0x14; i <= 0x7c; i = i + 8) {
-		void *hw_data = axi_heston.get_dev_ptr(i);
-		std::cout << "hw: 0x" << std::hex << i << ": " << std::dec;
-		std::cout << *((uint32_t*)hw_data) << " - " 
-				<< *((float*)hw_data) << std::endl;
-	}
-	*/
-	
-	// wait until all data is available
-	t_read.join();
+	// setup read iterator
+	read_iterator<float> read_it(path_cnt);
 
 	// calculate result
 	double result = 0;
-	for (uint32_t i = 0; i < path_cnt; ++i) {
-		result += std::max(0.f, std::exp(prices[i]) - strike_price);
+	float price;
+	while (read_it.next(price)) {
+		result += std::max(0.f, std::exp(price) - strike_price);
 	}
 	result *= std::exp(-riskless_rate * time_to_maturity) / path_cnt;
 	return result;
@@ -229,16 +275,6 @@ void array_stream_cpu(double a, double b, double *out, unsigned out_len) {
 	for (unsigned i = 0; i < out_len; ++i) {
 		out[i] = 0.2 * 2.5 + i;
 	}
-}
-
-
-void print_duration(std::chrono::steady_clock::time_point start, 
-		std::chrono::steady_clock::time_point end, unsigned cnt) {
-	double duration = std::chrono::duration<double>(
-		end - start).count();
-	std::cout << "Calculated " << cnt << " values in " << duration
-		<< " seconds (" << cnt / duration << " values / sec)"
-		<< std::endl;
 }
 
 
