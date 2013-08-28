@@ -83,7 +83,6 @@ int main_runner(int argc, char *argv[])
 
 	// benchmark
 #ifdef RUN_CPU
-	init_cpu();
 	auto start_cpu = std::chrono::steady_clock::now();
 	float result_cpu = heston_sl_cpu(spot_price, reversion_rate,
 		long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,

@@ -13,10 +13,6 @@
 
 typedef float calc_t;
 
-
-void init_cpu();
-
-
 calc_t heston_sl_cpu(
 		// call option
 		calc_t spot_price,
