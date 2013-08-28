@@ -1,4 +1,4 @@
-FLAGS = -I . -std=c++11 -Ofast -march=native
+FLAGS = -I. -std=c++11 -Ofast -march=native
 
 all: init_rng run_cpu run_acc run_both read_fifo read_rng
 
