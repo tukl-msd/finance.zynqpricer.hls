@@ -17,11 +17,12 @@
 #include "heston_sl_acc.hpp"
 #endif
 
+#include "json_helper.hpp"
+
 #include "json/json.h"
 
 #include <chrono>
 #include <iostream>
-#include <fstream>
 
 
 void print_duration(std::chrono::steady_clock::time_point start, 
@@ -31,19 +32,6 @@ void print_duration(std::chrono::steady_clock::time_point start,
 	std::cout << "Calculated " << cnt << " values in " << duration
 		<< " seconds (" << cnt / duration << " values / sec)"
 		<< std::endl;
-}
-
-
-Json::Value read_params(char *filename) {
-	std::ifstream file(filename);
-	Json::Value root;
-	Json::Reader reader;
-	if (!reader.parse(file, root)) {
-		std::cerr << "Failed to parse parameter file" << std::endl
-				<< reader.getFormattedErrorMessages();
-		exit(-1);
-	}
-	return root;
 }
 
 

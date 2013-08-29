@@ -7,32 +7,34 @@
 //
 
 #include "iodev.hpp"
+#include "json_helper.hpp"
 
+#include "json/json.h"
 #include "mt19937ar.h"
 
 #include <iostream>
 #include <cstring>
 
 // address of Random Number Generator
-const unsigned AXI_RNG_BASE_ADDR = 0x43C00000;
-const unsigned AXI_RNG_SIZE      = 0x00002000;
-
-int main(int argc, char *argv[]) {
+bool initialize_mersenne_twister(Json::Value mt, uint32_t seed){
+	// get address
+	unsigned base = asHex(mt["Offset Address"]);
+	unsigned range = asHex(mt["Range"]);
 	// get device pointers
-	IODev axi_rng(AXI_RNG_BASE_ADDR, AXI_RNG_SIZE);
+	IODev axi_rng(base, range);
 	volatile unsigned &rng_ctrl = *((unsigned*)axi_rng.get_dev_ptr(0x00));
 	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
 
 	// exit if rng is already running
 	if (!rng_idle) {
-		std::cerr << "ERROR: Random number generator is already running."
-				<< std::endl;
-		exit(EXIT_FAILURE);
+		std::cerr << "WARNING: Random number generator at address " <<
+				std::hex << base << " is already running." << std::endl;
+		return false;
 	}
 	
 	// get full Mersenne Twister state
 	uint32_t mt_state[624];
-	init_genrand(0);
+	init_genrand(seed);
 	generate_numbers();
 	get_mt_state(mt_state);
 
@@ -42,8 +44,25 @@ int main(int argc, char *argv[]) {
 	// start hardware rng
 	rng_ctrl = 1;
 
-	std::cout << "Random Number Generator has been started." << std::endl;
+	std::cout << "Initialized Random Number Generator at address " << 
+				std::hex << base << " with seed " << seed << "." << std::endl;
+	return true;
+}
 
-	return 0;
+int main(int argc, char *argv[]) {
+	if (argc != 2) {
+		std::cout << "Usage: " << argv[0] << " bitstream.json" << std::endl;
+		return -1;
+	}
+	Json::Value bitstream = read_params(argv[1]);
+	uint32_t seed = 0;
+	for (auto component: bitstream) {
+		if (component["__class__"] == "heston_sl") {
+			initialize_mersenne_twister(
+					component["mersenne_twister"],
+					seed);
+			++seed;
+		}
+	}
 }
 
