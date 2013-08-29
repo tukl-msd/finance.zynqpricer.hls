@@ -1,4 +1,5 @@
-FLAGS = -I. -std=c++11 -Ofast -march=native
+FLAGS = -I. -std=c++11 -O3 -march=native -ftree-vectorizer-verbose=9
+#-Ofast -march=native -ffast-math -ftree-vectorizer-verbose=9
 
 all: init_rng run_cpu run_acc run_both read_fifo read_rng
 
