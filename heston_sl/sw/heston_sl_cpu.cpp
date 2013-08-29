@@ -103,7 +103,7 @@ calc_t heston_sl_cpu(
 			calc_t lower[BLOCK_SIZE];
 			// separate vectoriable constructs
 			for (unsigned i = 0; i < upper_i; ++i) {
-					sqrt_vola[i] = std::sqrt(max_vola[i]);
+				sqrt_vola[i] = std::sqrt(max_vola[i]);
 				stock[i] += (double_riskless_rate - max_vola[i]) *
 						half_step_size + sqrt_step_size * sqrt_vola[i] *
 						z_stock[i];
