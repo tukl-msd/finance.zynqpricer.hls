@@ -165,46 +165,23 @@ static const double wtab[128] = {
 };
 
 
-std::random_device rd_zig;
-std::mt19937 rng_zig(rd_zig());
-
 double rn_to_float_zig(uint_fast32_t rn) {
 	return rn * (1. / 4294967296.0);
 }
 
 double
-gsl_ran_gaussian_ziggurat ()
+gsl_ran_gaussian_ziggurat (std::mt19937 &rng)
 {
   unsigned long int i, j;
   int sign;
   double x, y;
 
-  const unsigned long int range = 0xffffffff;
-
   while (1)
     {
-      if (range >= 0xFFFFFFFF)
-        {
-          unsigned long int k = rng_zig();
-          i = (k & 0xFF);
-          j = (k >> 8) & 0xFFFFFF;
-        }
-      else if (range >= 0x00FFFFFF)
-        {
-          unsigned long int k1 = rng_zig();
-          unsigned long int k2 = rng_zig();
-          i = (k1 & 0xFF);
-          j = (k2 & 0x00FFFFFF);
-        }
-      else
-        {
-			i = 0;
-			j = 0;
-			std::cerr << "ERROR: not implemented" << std::endl;
-			exit(-1);
-          //i = gsl_rng_uniform_int (r, 256); /*  choose the step */
-          //j = gsl_rng_uniform_int (r, 16777216);  /* sample from 2^24 */
-        }
+      
+      unsigned long int k = rng();
+      i = (k & 0xFF);
+      j = (k >> 8) & 0xFFFFFF;
 
       sign = (i & 0x80) ? +1 : -1;
       i &= 0x7f;
@@ -219,14 +196,14 @@ gsl_ran_gaussian_ziggurat ()
           double y0, y1, U1;
           y0 = ytab[i];
           y1 = ytab[i + 1];
-          U1 = rn_to_float_zig(rng_zig());
+          U1 = rn_to_float_zig(rng());
           y = y1 + (y0 - y1) * U1;
         }
       else
         {
           double U1, U2;
-          U1 = 1.0 - rn_to_float_zig(rng_zig());
-          U2 = rn_to_float_zig(rng_zig());
+          U1 = 1.0 - rn_to_float_zig(rng());
+          U2 = rn_to_float_zig(rng());
           x = PARAM_R - log (U1) / PARAM_R;
           y = exp (-PARAM_R * (x - 0.5 * PARAM_R)) * U2;
         }
