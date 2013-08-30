@@ -12,8 +12,10 @@
 // - vectorizable loops (AVX)
 // - exploit loop pipelining / blocking
 //
-// MSCV: /O2 /arch:AVX /fp:fast
-// GCC: -Ofast -march=native
+// Compiler flags:
+// - MSCV: /O2 /arch:AVX /fp:fast
+// - GCC on ARM: -O3 -march=native -ffast-math -mfpu=neon
+// - GCC on Intel: -O3 -march=native -ffast-math
 
 #define _VARIADIC_MAX 10
 
@@ -135,6 +137,8 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 			// separate vectoriable constructs
 			for (unsigned i = 0; i < upper_i; ++i) {
 				sqrt_vola[i] = std::sqrt(max_vola[i]);
+			}
+			for (unsigned i = 0; i < upper_i; ++i) {
 				stock[i] += (double_riskless_rate - max_vola[i]) *
 						half_step_size + sqrt_step_size * sqrt_vola[i] *
 						z_stock[i];

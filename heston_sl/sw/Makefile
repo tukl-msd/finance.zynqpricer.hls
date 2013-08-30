@@ -1,9 +1,9 @@
-FLAGS = -I. -std=c++11 -O3 -march=native -ftree-vectorizer-verbose=9
-#-Ofast -march=native -ffast-math -ftree-vectorizer-verbose=9
+FLAGS = -I. -std=c++11 -O3 -march=native -ffast-math -mfpu=neon
+# -ftree-vectorizer-verbose=1 
 
 all: init_rng run_cpu run_acc run_both read_fifo read_rng
 
-init_rng: init_rng.o mt19937ar.o iodev.hpp
+init_rng: init_rng.o mt19937ar.o jsoncpp.o iodev.hpp
 	g++ $(FLAGS) $^ -o $@
 
 run_cpu: run_cpu.cpp heston_sl_cpu.o heston_sl_cpu.hpp jsoncpp.o mt19937ar.o runner.hpp
