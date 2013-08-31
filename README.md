@@ -16,7 +16,7 @@ development including:
 - Dynamic reconfiguration of the FPGA in < 200 ms from Linux command line,
   during runtime
 - Low latency (~ 100 ns) and high bandwidth (1.6 GiB/s) interconnect between 
-  Programmable Logic (FPGA) and Programmable System (ARM).
+  FPGA and ARM.
 - C++ user space driver development possible. Fully available debugging 
   techniques like on Desktop systems. 
 - High level accelerator description possible base on the new Vivado HLS
