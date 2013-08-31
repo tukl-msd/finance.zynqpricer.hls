@@ -9,8 +9,7 @@
 #ifndef __RUNNER_HPP__
 #define __RUNNER_HPP__
 
-/* define RUN_CPU and/or RUN_ACC to run the specific benchmark*/
-int main_runner(int argc, char *argv[]);
+int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc);
 
 #endif
 

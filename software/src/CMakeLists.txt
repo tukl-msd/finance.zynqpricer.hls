@@ -106,6 +106,9 @@ target_link_libraries(read_rng mt19937)
 
 ### install targets ###
 
+# only install targets that have been build
+SET(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
+
 INSTALL(TARGETS init_rng run_cpu run_acc run_both read_fifo read_rng
-		RUNTIME DESTINATION bin)
+		RUNTIME DESTINATION bin OPTIONAL)
 

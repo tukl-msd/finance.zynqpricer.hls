@@ -6,11 +6,9 @@
 // 27. August 2013
 //
 
-#define RUN_CPU
-#define RUN_ACC
 #include "runner.hpp"
 
 int main(int argc, char *argv[])
 {
-	return main_runner(argc, argv);
+	return main_runner(argc, argv, true, true);
 }

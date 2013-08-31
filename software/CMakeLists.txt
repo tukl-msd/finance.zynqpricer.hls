@@ -10,7 +10,12 @@ cmake_minimum_required(VERSION 2.8)
 project(finance.zynqpricer.hls)
 
 include(buildsys/shared.cmake)
-SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+# only install targets that have been build
+SET(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
+
 
 # g++ compiler flags
 if(CMAKE_COMPILER_IS_GNUCXX)

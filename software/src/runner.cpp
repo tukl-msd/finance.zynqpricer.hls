@@ -8,14 +8,10 @@
 
 #include "runner.hpp"
 
-//#ifdef RUN_CPU
 #include "heston_sl_cpu.hpp"
-//#endif
-//#ifdef RUN_ACC
 #ifdef __unix__
 #include "heston_sl_acc.hpp"
 #endif
-//#endif
 #include "json_helper.hpp"
 
 #include "json/json.h"
@@ -34,7 +30,7 @@ void print_duration(std::chrono::steady_clock::time_point start,
 }
 
 
-int main_runner(int argc, char *argv[])
+int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 {
 	if (argc != 2) {
 		std::cout << "Usage: " << argv[0] << " params.json" << std::endl;
@@ -69,27 +65,28 @@ int main_runner(int argc, char *argv[])
 
 
 	// benchmark
-//#ifdef RUN_CPU
-	auto start_cpu = std::chrono::steady_clock::now();
-	float result_cpu = heston_sl_cpu(spot_price, reversion_rate,
-		long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
-		correlation, time_to_maturity, strike_price, lower_barrier_value,
-		upper_barrier_value, step_cnt, path_cnt);
-	auto end_cpu = std::chrono::steady_clock::now();
-	std::cout << "CPU: result = " << result_cpu << std::endl;
-	std::cout << "CPU: "; print_duration(start_cpu, end_cpu, path_cnt);
-//#endif
-//#ifdef RUN_ACC
 #ifdef __unix__
-	auto start_acc = std::chrono::steady_clock::now();
-	float result_acc = heston_sl_hw(spot_price, reversion_rate,
-		long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
-		correlation, time_to_maturity, strike_price, lower_barrier_value,
-		upper_barrier_value, step_cnt, path_cnt);
-	auto end_acc = std::chrono::steady_clock::now();
-	std::cout << "ACC: result = " << result_acc << std::endl;
-	std::cout << "ACC: "; print_duration(start_acc, end_acc, path_cnt);
+	if (run_acc) {
+		auto start_acc = std::chrono::steady_clock::now();
+		float result_acc = heston_sl_hw(spot_price, reversion_rate,
+			long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
+			correlation, time_to_maturity, strike_price, lower_barrier_value,
+			upper_barrier_value, step_cnt, path_cnt);
+		auto end_acc = std::chrono::steady_clock::now();
+		std::cout << "ACC: result = " << result_acc << std::endl;
+		std::cout << "ACC: "; print_duration(start_acc, end_acc, path_cnt);
+	}
 #endif
+	if (run_cpu) {
+		auto start_cpu = std::chrono::steady_clock::now();
+		float result_cpu = heston_sl_cpu(spot_price, reversion_rate,
+			long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
+			correlation, time_to_maturity, strike_price, lower_barrier_value,
+			upper_barrier_value, step_cnt, path_cnt);
+		auto end_cpu = std::chrono::steady_clock::now();
+		std::cout << "CPU: result = " << result_cpu << std::endl;
+		std::cout << "CPU: "; print_duration(start_cpu, end_cpu, path_cnt);
+	}
 
 	std::cout << "done" << std::endl;
 	return 0;
