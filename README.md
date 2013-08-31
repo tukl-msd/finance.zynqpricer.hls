@@ -39,8 +39,8 @@ Repository Structure
 - ip: Packed HLS accelerators, that can be instanciated and synthesized 
   with Vivado
 - results: deliverables of this project
-- sw: linux drivers for the accelerators and optimized CPU implementations 
-  for heston
+- software: linux drivers for the accelerators and optimized CPU 
+  implementations for heston
 
 See the individual folders for more information.
 
