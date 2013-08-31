@@ -35,9 +35,11 @@ Repository Structure
 
 - bin: FPGA bitstreams containing accelerators for Zynq
 - hls: Accelerators written for Vivado HLS
-- ip: Packed HLS accelerators, that can be instanciated and with Vivado
+- ip: Packed HLS accelerators, that can be instanciated and synthesized 
+  with Vivado
 - results: deliverables of this project
-- sw: linux drivers for the accelerators and optimized CPU implementations for heston
+- sw: linux drivers for the accelerators and optimized CPU implementations 
+  for heston
 
 See the individual folders for more information.
 
