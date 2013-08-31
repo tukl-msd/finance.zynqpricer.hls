@@ -43,6 +43,7 @@
  *
  */
 
+#include "gausszig_GSL.hpp"
 
 //#include <config.h>
 #include <math.h>
@@ -214,3 +215,4 @@ gsl_ran_gaussian_ziggurat (std::mt19937 &rng)
 
   return sign * x;
 }
+

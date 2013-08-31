@@ -6,8 +6,7 @@
 // 29. August 2013
 //
 
-#ifndef __JSON_HELPER__
-#define __JSON_HELPER__
+#include "json_helper.hpp"
 
 #include "json/json.h"
 
@@ -37,4 +36,3 @@ unsigned asHex(Json::Value val) {
 }
 
 
-#endif

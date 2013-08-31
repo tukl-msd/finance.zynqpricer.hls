@@ -1,7 +1,2 @@
-heston_sl
-init_rng
-read_fifo
-read_rng
-run_cpu
-run_acc
-run_both
+build
+bin

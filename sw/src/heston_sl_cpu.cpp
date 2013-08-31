@@ -21,7 +21,6 @@
 
 #include "heston_sl_cpu.hpp"
 
-#include "mt19937ar.h"
 #include "ziggurat/gausszig_GSL.hpp"
 
 #include <iostream>

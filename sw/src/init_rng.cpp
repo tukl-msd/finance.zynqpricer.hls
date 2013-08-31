@@ -10,7 +10,7 @@
 #include "json_helper.hpp"
 
 #include "json/json.h"
-#include "mt19937ar.h"
+#include "mt19937/mt19937ar.h"
 
 #include <iostream>
 #include <cstring>

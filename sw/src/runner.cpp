@@ -6,17 +6,16 @@
 // 27. August 2013
 //
 
-#ifndef __RUNNER_HPP__
-#define __RUNNER_HPP__
+#include "runner.hpp"
 
-#ifdef RUN_CPU
+//#ifdef RUN_CPU
 #include "heston_sl_cpu.hpp"
-#endif
-
-#ifdef RUN_ACC
+//#endif
+//#ifdef RUN_ACC
+#ifdef __unix__
 #include "heston_sl_acc.hpp"
 #endif
-
+//#endif
 #include "json_helper.hpp"
 
 #include "json/json.h"
@@ -70,7 +69,7 @@ int main_runner(int argc, char *argv[])
 
 
 	// benchmark
-#ifdef RUN_CPU
+//#ifdef RUN_CPU
 	auto start_cpu = std::chrono::steady_clock::now();
 	float result_cpu = heston_sl_cpu(spot_price, reversion_rate,
 		long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
@@ -79,8 +78,9 @@ int main_runner(int argc, char *argv[])
 	auto end_cpu = std::chrono::steady_clock::now();
 	std::cout << "CPU: result = " << result_cpu << std::endl;
 	std::cout << "CPU: "; print_duration(start_cpu, end_cpu, path_cnt);
-#endif
-#ifdef RUN_ACC
+//#endif
+//#ifdef RUN_ACC
+#ifdef __unix__
 	auto start_acc = std::chrono::steady_clock::now();
 	float result_acc = heston_sl_hw(spot_price, reversion_rate,
 		long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
@@ -95,5 +95,4 @@ int main_runner(int argc, char *argv[])
 	return 0;
 }
 
-#endif
 
