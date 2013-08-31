@@ -9,6 +9,7 @@
 include_directories(.)
 include_directories(../externals)
 
+find_package (Threads)
 
 #### lib:iodev #######################################################
 set(HEADERS
@@ -43,6 +44,7 @@ set(SOURCE
 )
 add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
 target_link_libraries(heston_sl_cpu ziggurat)
+target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 
 #### lib:json_helper ##############################################
