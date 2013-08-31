@@ -34,7 +34,7 @@ pricer that beats all our current implementations in:
 Repository Structure
 --------------------
 
-- bin: FPGA bitstreams containing accelerators for Zynq
+- bitstream: FPGA bitstreams containing accelerators for Zynq
 - hls: Accelerators written for Vivado HLS
 - ip: Packed HLS accelerators, that can be instanciated and synthesized 
   with Vivado
