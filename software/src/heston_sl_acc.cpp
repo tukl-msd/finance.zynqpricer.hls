@@ -25,95 +25,14 @@
 #include <cmath>
 #include <fstream>
 
-const unsigned PACKET_SIZE = 500;
-const useconds_t BUSY_WAIT_NANO_SLEEP_TIME = 0; // nano seconds
-const useconds_t BUSY_WAIT_MICRO_SLEEP_TIME = 50; // micro seconds
-
-// address of AXI Stream FIFO
-const unsigned AXI_FIFO_BASE_ADDR   = 0x4AA00000;
-const unsigned AXI_FIFO_SIZE        = 0x00001000;
-// address of Random Number Generator
-const unsigned AXI_RNG_BASE_ADDR    = 0x43C00000;
-const unsigned AXI_RNG_SIZE         = 0x00002000;
-// address of Heston Kernel
-const unsigned AXI_HESTON_BASE_ADDR = 0x43C10000;
-const unsigned AXI_HESTON_SIZE      = 0x00000080;
-
-
-// sleep for nano_sec micro seconds with busy loop
-void nano_sleep(long nano_sec) {
-	auto start = std::chrono::steady_clock::now();
-	while (true) {
-		long nano = std::chrono::duration<long, std::nano>(
-			std::chrono::steady_clock::now() - start).count();
-		if (nano_sec <= nano)
-			break;
-	}
-}
-
-
-void call_write_thread(const unsigned cnt, const bool do_busy_wait) {
-	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
-	// Transmit Data FIFO Vacancy (TDFV)
-	volatile unsigned &tdfv = *((unsigned*)axi_ctrl.get_dev_ptr(0x0C));
-	// Transmit Data FIFO Data (TDFD)
-	volatile unsigned &tdfd = *((unsigned*)axi_ctrl.get_dev_ptr(0x10));
-	// Transmit Length FIFO (TLF)
-	volatile unsigned &tlf = *((unsigned*)axi_ctrl.get_dev_ptr(0x14));
-
-	unsigned cnt_todo = cnt;
-	unsigned free = 0;
-	for (unsigned i = 0; i < cnt; ++i) {
-		while (free == 0) {
-			free = tdfv;
-			if (do_busy_wait)
-				nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
-			else
-				usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
-		}
-		tdfd = i;
-		--free;
-		if ((i+1) % PACKET_SIZE == 0) {
-			tlf = PACKET_SIZE * 4;
-			cnt_todo -= PACKET_SIZE;
-		}
-	}
-	if (cnt_todo > 0) {
-		tlf = cnt_todo * 4;
-	}
-}
-
-
-//TODO(brugger): use void* for out and cnt in bytes instead of sizeof(unsigned)
-void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
-	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
-	// Receive Data FIFO Occupancy (RDFO)
-	volatile unsigned &rdfo = *((unsigned*)axi_ctrl.get_dev_ptr(0x1C));
-	// Receive Data FIFO Data (RDFD)
-	volatile unsigned &rdfd = *((unsigned*)axi_ctrl.get_dev_ptr(0x20));
-
-	unsigned avail = 0;
-	for (unsigned i = 0; i < cnt; ++i) {
-		while (avail == 0) {
-			avail = rdfo & 0x7fffffff;
-			if (do_busy_wait)
-				nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
-			else
-				usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
-		}
-		out[i] = rdfd;
-		--avail;
-	}
-}
-
 
 template <typename T>
 class read_iterator {
 public:
 	read_iterator(const std::vector<Json::Value> fifos, const unsigned cnt, 
-			const bool do_busy_wait=false) 
+			const useconds_t sleep_usec=50) 
 		: total_read_cnt(cnt), 
-		  do_busy_wait(do_busy_wait),
+		  sleep_usec(sleep_usec),
 		  device_cnt(fifos.size())
 	{
 		if (sizeof(T) != 4) {
@@ -128,6 +47,26 @@ public:
 		}
 	}
 
+	bool next(T &out) {
+		if (words_read < total_read_cnt) {
+			while (avail == 0) {
+				// go to next device
+				current_device = (current_device + 1) % device_cnt;
+				avail = get_occupancy(devices[current_device]);
+				if (avail == 0) {
+					usleep(sleep_usec);
+				}
+			}
+			--avail;
+			++words_read;
+			out = read_data(devices[current_device]);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+private:
 	// get number of words available to read for fifo device
 	unsigned get_occupancy(IODev &dev) {
 		// Receive Data FIFO Occupancy (RDFO)
@@ -143,33 +82,11 @@ public:
 		return *((T*)dev.get_dev_ptr(0x20));
 	}
 
-	bool next(T &out) {
-		if (words_read < total_read_cnt) {
-			while (avail == 0) {
-				// go to next device
-				current_device = (current_device + 1) % device_cnt;
-				avail = get_occupancy(devices[current_device]);
-				if (avail == 0) {
-					if (do_busy_wait)
-						nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
-					else
-						usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
-				}
-			}
-			--avail;
-			++words_read;
-			out = read_data(devices[current_device]);
-			return true;
-		} else {
-			return false;
-		}
-	}
-
 private:
 	std::vector<IODev> devices;
 	unsigned total_read_cnt;
-	bool do_busy_wait;
 	unsigned device_cnt;
+	useconds_t sleep_usec;
 
 	// current device
 	unsigned current_device = 0;
@@ -179,9 +96,6 @@ private:
 	unsigned words_read = 0;
 };
 
-
-// continuity correction, see Broadie, Glasserman, Kou (1997)
-#define BARRIER_HIT_CORRECTION 0.5826
 
 struct HestonParamsHW {
 	// call option
