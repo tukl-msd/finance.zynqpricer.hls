@@ -45,7 +45,7 @@
 
 #include "gausszig_GSL.hpp"
 
-
+/*
 
 // tabulated values for the heigt of the Ziggurat levels
 template <typename calc_t>
@@ -161,3 +161,4 @@ const double Ziggurat<calc_t>::wtab[128] = {
 
 
 template Ziggurat<double>;
+*/

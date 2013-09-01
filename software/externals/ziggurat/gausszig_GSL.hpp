@@ -123,7 +123,7 @@ private:
 };
 
 
-/*
+
 // tabulated values for the heigt of the Ziggurat levels
 template<typename calc_t>
 const double Ziggurat<calc_t>::ytab[128] = {
@@ -235,6 +235,6 @@ const double Ziggurat<calc_t>::wtab[128] = {
 	  1.64596952856e-07, 1.68292495203e-07, 1.72541128694e-07, 1.77574279496e-07,
 	  1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
-*/
+
 
 #endif
