@@ -44,3 +44,7 @@ Repository Structure
 
 See the individual folders for more information.
 
+Zynq Demo
+---------
+
+The Zynq demo can be found in the software folder. Additional instructions can be found there.

@@ -16,7 +16,7 @@
 	},
 	"simulation": {
         	"step_cnt": 250,
-        	"path_cnt": 10000
+        	"path_cnt": 100000
 	},
 	"reference": {
 		"price": 0.74870,
