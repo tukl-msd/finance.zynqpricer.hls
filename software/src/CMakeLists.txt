@@ -43,7 +43,7 @@ set(SOURCE
 		heston_sl_cpu.cpp
 )
 add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_cpu ziggurat)
+target_link_libraries(heston_sl_cpu)
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 
@@ -68,7 +68,10 @@ set(SOURCE
 		runner.cpp
 )
 add_library(runner ${SOURCE} ${HEADERS})
-target_link_libraries(runner json_helper heston_sl_cpu heston_sl_acc)
+target_link_libraries(runner json_helper heston_sl_cpu)
+if (UNIX)
+	target_link_libraries(runner heston_sl_acc)
+endif()
 
 
 

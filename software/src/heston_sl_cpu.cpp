@@ -13,7 +13,7 @@
 // - exploit loop pipelining / blocking
 //
 // Compiler flags:
-// - MSCV: /O2 /arch:AVX /fp:fast
+// - MSCV: /O2 /arch:AVX /fp:fast /GL
 // - GCC on ARM: -O3 -march=native -ffast-math -mfpu=neon
 // - GCC on Intel: -O3 -march=native -ffast-math
 

@@ -76,6 +76,11 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 		std::cout << "ACC: result = " << result_acc << std::endl;
 		std::cout << "ACC: "; print_duration(start_acc, end_acc, path_cnt);
 	}
+#else
+	if (run_acc) {
+		std::cerr << "Running accelerator only supported under Linux" << std::endl;
+		return -1;
+	}
 #endif
 	if (run_cpu) {
 		auto start_cpu = std::chrono::steady_clock::now();
