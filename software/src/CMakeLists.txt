@@ -43,7 +43,7 @@ set(SOURCE
 		heston_sl_cpu.cpp
 )
 add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_cpu)
+target_link_libraries(heston_sl_cpu ziggurat)
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 

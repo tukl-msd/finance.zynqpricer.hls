@@ -17,9 +17,31 @@
 // - GCC on ARM: -O3 -march=native -ffast-math -mfpu=neon
 // - GCC on Intel: -O3 -march=native -ffast-math
 
-#define _VARIADIC_MAX 10
+
 
 #include "heston_sl_cpu.hpp"
+
+#include <random>
+#include <map>
+#include <mutex>
+
+// get separate rng for each thread
+std::mt19937 get_thread_rng() {
+	static uint32_t rng_cnt = std::random_device()();
+	static std::map<std::thread::id, std::mt19937> rng_map;
+	static std::mutex m;
+	{
+		std::lock_guard<std::mutex> lock(m);
+		if (rng_map.count(std::this_thread::get_id()) == 0) {
+			rng_map[std::this_thread::get_id()] = std::mt19937(rng_cnt);
+			++rng_cnt;
+		}
+		return rng_map[std::this_thread::get_id()];
+	}
+}
+
+
+/*
 
 #include "ziggurat/gausszig_GSL.hpp"
 
@@ -49,7 +71,7 @@ std::mt19937 get_thread_rng() {
 	}
 }
 
-
+template<typename calc_t>
 struct HestonParamsSL {
 	// call option
 	calc_t spot_price;
@@ -76,7 +98,8 @@ struct HestonParamsSL {
 #define BLOCK_SIZE 64
 
 // single threaded version
-calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
+template<typename calc_t>
+calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	// pre-compute
 	calc_t step_size = p.time_to_maturity / p.step_cnt;
 	calc_t sqrt_step_size = std::sqrt(step_size);
@@ -166,6 +189,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 
 #define NT 4
 
+template<typename calc_t>
 calc_t heston_sl_cpu(
 		// call option
 		calc_t spot_price,
@@ -189,9 +213,10 @@ calc_t heston_sl_cpu(
 		upper_barrier_value, step_cnt, path_cnt / NT};
 	std::future<calc_t> f[NT];
 	for (int i = 0; i < NT; ++i)
-		f[i] = std::async(heston_sl_cpu_kernel, p);
+		f[i] = std::async(heston_sl_cpu_kernel<float>, p);
 	calc_t sum = 0;
 	for (int i = 0; i < NT; ++i)
 		sum += f[i].get();
 	return (calc_t)(sum / NT);
 }
+*/

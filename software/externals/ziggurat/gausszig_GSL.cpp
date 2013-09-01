@@ -43,90 +43,12 @@
  *
  */
 
-#ifndef __GAUSSZIG_GSL_HPP
-#define __GAUSSZIG_GSL_HPP
-
-//#include <config.h>
-#include <math.h>
-//#include <gsl/gsl_math.h>
-//#include <gsl/gsl_rng.h>
-//#include <gsl/gsl_randist.h>
-#include <random>
-#include <cstdint>
-#include <iostream>
-
-/* position of right-most step */
-#define PARAM_R 3.44428647676
+#include "gausszig_GSL.hpp"
 
 
-//template <typename calc_t>
-class Ziggurat {
-public:
-	inline static double gsl_ran_gaussian_ziggurat (std::mt19937 &rng)
-	{
-	  unsigned long int i, j;
-	  int sign;
-	  double x, y;
 
-	  while (1)
-		{
-      
-		  unsigned long int k = rng();
-		  i = (k & 0xFF);
-		  j = (k >> 8) & 0xFFFFFF;
-
-		  sign = (i & 0x80) ? +1 : -1;
-		  i &= 0x7f;
-
-		  x = j * wtab[i];
-
-		  if (j < ktab[i])
-			break;
-
-		  if (i < 127)
-			{
-			  double y0, y1, U1;
-			  y0 = ytab[i];
-			  y1 = ytab[i + 1];
-			  U1 = rn_to_float_zig(rng());
-			  y = y1 + (y0 - y1) * U1;
-			}
-		  else
-			{
-			  double U1, U2;
-			  U1 = 1.0 - rn_to_float_zig(rng());
-			  U2 = rn_to_float_zig(rng());
-			  x = PARAM_R - log (U1) / PARAM_R;
-			  y = exp (-PARAM_R * (x - 0.5 * PARAM_R)) * U2;
-			}
-
-		  if (y < exp (-0.5 * x * x))
-			break;
-		}
-
-	  return sign * x;
-	}
-private:
-	/* tabulated values for the heigt of the Ziggurat levels */
-	static const double ytab[128];
-
-	/* tabulated values for 2^24 times x[i]/x[i+1],
-	 * used to accept for U*x[i+1]<=x[i] without any floating point operations */
-	static const unsigned long ktab[128];
-
-	/* tabulated values of 2^{-24}*x[i] */
-	static const double wtab[128];
-
-	inline static double rn_to_float_zig(uint_fast32_t rn) {
-		return rn * (1. / 4294967296.0);
-	}
-};
-
-
-/*
 // tabulated values for the heigt of the Ziggurat levels
-template<typename calc_t>
-const double Ziggurat<calc_t>::ytab[128] = {
+const double Ziggurat::ytab[128] = {
   1, 0.963598623011, 0.936280813353, 0.913041104253,
   0.892278506696, 0.873239356919, 0.855496407634, 0.838778928349,
   0.822902083699, 0.807732738234, 0.793171045519, 0.779139726505,
@@ -163,8 +85,7 @@ const double Ziggurat<calc_t>::ytab[128] = {
 
 // tabulated values for 2^24 times x[i]/x[i+1],
 // used to accept for U*x[i+1]<=x[i] without any floating point operations
-template<typename calc_t>
-const unsigned long Ziggurat<calc_t>::ktab[128] = {
+const unsigned long Ziggurat::ktab[128] = {
   0, 12590644, 14272653, 14988939,
   15384584, 15635009, 15807561, 15933577,
   16029594, 16105155, 16166147, 16216399,
@@ -200,8 +121,7 @@ const unsigned long Ziggurat<calc_t>::ktab[128] = {
 };
 
 // tabulated values of 2^{-24}*x[i]
-template <typename calc_t>
-const double Ziggurat<calc_t>::wtab[128] = {
+const double Ziggurat::wtab[128] = {
 	  1.62318314817e-08, 2.16291505214e-08, 2.54246305087e-08, 2.84579525938e-08,
 	  3.10340022482e-08, 3.33011726243e-08, 3.53439060345e-08, 3.72152672658e-08,
 	  3.8950989572e-08, 4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
@@ -235,6 +155,3 @@ const double Ziggurat<calc_t>::wtab[128] = {
 	  1.64596952856e-07, 1.68292495203e-07, 1.72541128694e-07, 1.77574279496e-07,
 	  1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
-*/
-
-#endif

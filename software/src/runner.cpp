@@ -84,7 +84,7 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 #endif
 	if (run_cpu) {
 		auto start_cpu = std::chrono::steady_clock::now();
-		float result_cpu = heston_sl_cpu(spot_price, reversion_rate,
+		float result_cpu = heston_sl_cpu<float>(spot_price, reversion_rate,
 			long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
 			correlation, time_to_maturity, strike_price, lower_barrier_value,
 			upper_barrier_value, step_cnt, path_cnt);
