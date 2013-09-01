@@ -37,13 +37,13 @@ target_link_libraries(heston_sl_acc iodev)
 #### lib:heston_sl_cpu ##############################################
 set(HEADERS
 		heston_sl_cpu.hpp
+		../externals/ziggurat/gausszig_GSL.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		heston_sl_cpu.cpp
 )
 add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_cpu ziggurat)
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 
