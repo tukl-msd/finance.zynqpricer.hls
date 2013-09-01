@@ -59,7 +59,7 @@
 #define PARAM_R 3.44428647676
 
 
-//template <typename calc_t>
+template <typename calc_t>
 class Ziggurat {
 public:
 	inline static double gsl_ran_gaussian_ziggurat (std::mt19937 &rng)

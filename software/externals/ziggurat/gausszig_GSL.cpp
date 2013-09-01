@@ -48,7 +48,8 @@
 
 
 // tabulated values for the heigt of the Ziggurat levels
-const double Ziggurat::ytab[128] = {
+template <typename calc_t>
+const double Ziggurat<calc_t>::ytab[128] = {
   1, 0.963598623011, 0.936280813353, 0.913041104253,
   0.892278506696, 0.873239356919, 0.855496407634, 0.838778928349,
   0.822902083699, 0.807732738234, 0.793171045519, 0.779139726505,
@@ -85,7 +86,8 @@ const double Ziggurat::ytab[128] = {
 
 // tabulated values for 2^24 times x[i]/x[i+1],
 // used to accept for U*x[i+1]<=x[i] without any floating point operations
-const unsigned long Ziggurat::ktab[128] = {
+template <typename calc_t>
+const unsigned long Ziggurat<calc_t>::ktab[128] = {
   0, 12590644, 14272653, 14988939,
   15384584, 15635009, 15807561, 15933577,
   16029594, 16105155, 16166147, 16216399,
@@ -121,7 +123,8 @@ const unsigned long Ziggurat::ktab[128] = {
 };
 
 // tabulated values of 2^{-24}*x[i]
-const double Ziggurat::wtab[128] = {
+template <typename calc_t>
+const double Ziggurat<calc_t>::wtab[128] = {
 	  1.62318314817e-08, 2.16291505214e-08, 2.54246305087e-08, 2.84579525938e-08,
 	  3.10340022482e-08, 3.33011726243e-08, 3.53439060345e-08, 3.72152672658e-08,
 	  3.8950989572e-08, 4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
@@ -155,3 +158,6 @@ const double Ziggurat::wtab[128] = {
 	  1.64596952856e-07, 1.68292495203e-07, 1.72541128694e-07, 1.77574279496e-07,
 	  1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
+
+
+template Ziggurat<double>;
