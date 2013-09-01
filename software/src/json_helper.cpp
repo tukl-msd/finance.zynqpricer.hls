@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <string>
 
 
 Json::Value read_params(char *filename) {
@@ -28,11 +29,7 @@ Json::Value read_params(char *filename) {
 
 
 unsigned asHex(Json::Value val) {
-	unsigned res;
-	std::stringstream ss;
-	ss << std::hex << val.asString();
-	ss >> res;
-	return res;
+	return std::stoul(val.asString(), 0, 0);
 }
 
 

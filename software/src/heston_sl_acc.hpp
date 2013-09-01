@@ -9,9 +9,12 @@
 #ifndef __HESTON_SL_ACC_HPP
 #define __HESTON_SL_ACC_HPP
 
+#include "json/json-forwards.h"
+
 #include <stdint.h>
 
 float heston_sl_hw(
+		Json::Value bitstream,
 		// call option
 		float spot_price,
 		float reversion_rate,

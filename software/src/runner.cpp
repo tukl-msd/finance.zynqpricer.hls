@@ -21,22 +21,32 @@
 
 
 void print_duration(std::chrono::steady_clock::time_point start, 
-		std::chrono::steady_clock::time_point end, unsigned cnt) {
+		std::chrono::steady_clock::time_point end, unsigned steps) {
 	double duration = std::chrono::duration<double>(
 		end - start).count();
-	std::cout << "Calculated " << cnt << " values in " << duration
-		<< " seconds (" << cnt / duration << " values / sec)"
+	std::cout << "Calculated " << steps << " steps in " << duration
+		<< " seconds (" << steps / duration << " steps / sec)"
 		<< std::endl;
+}
+
+
+void check_usage(int argc, char *argv0, bool run_acc) {
+	if ((run_acc and argc != 3) or (!run_acc and argc != 2)) {
+		std::cerr << "Usage: " << argv0 << " params.json" << 
+				(run_acc ? " bitstream.json" : "") << std::endl;
+		exit(-1);
+	}
 }
 
 
 int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 {
-	if (argc != 2) {
-		std::cout << "Usage: " << argv[0] << " params.json" << std::endl;
-		return -1;
-	}
+	check_usage(argc, argv[0], run_acc);
+
 	Json::Value params = read_params(argv[1]);
+	Json::Value bitstream;
+	if (run_acc)
+		bitstream = read_params(argv[2]);
 
 	// heston params
 	auto heston = params["heston"];
@@ -65,20 +75,22 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 
 
 	// benchmark
+	uint32_t steps = step_cnt * path_cnt;
 #ifdef __unix__
 	if (run_acc) {
 		auto start_acc = std::chrono::steady_clock::now();
-		float result_acc = heston_sl_hw(spot_price, reversion_rate,
+		float result_acc = heston_sl_hw(bitstream, spot_price, reversion_rate,
 			long_term_avg_vola, vol_of_vol, riskless_rate, vola_0,
 			correlation, time_to_maturity, strike_price, lower_barrier_value,
 			upper_barrier_value, step_cnt, path_cnt);
 		auto end_acc = std::chrono::steady_clock::now();
 		std::cout << "ACC: result = " << result_acc << std::endl;
-		std::cout << "ACC: "; print_duration(start_acc, end_acc, path_cnt);
+		std::cout << "ACC: "; print_duration(start_acc, end_acc, steps);
 	}
 #else
 	if (run_acc) {
-		std::cerr << "Running accelerator only supported under Linux" << std::endl;
+		std::cerr << "Running accelerator only supported under Linux" << 
+				std::endl;
 		return -1;
 	}
 #endif
@@ -90,7 +102,7 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 			upper_barrier_value, step_cnt, path_cnt);
 		auto end_cpu = std::chrono::steady_clock::now();
 		std::cout << "CPU: result = " << result_cpu << std::endl;
-		std::cout << "CPU: "; print_duration(start_cpu, end_cpu, path_cnt);
+		std::cout << "CPU: "; print_duration(start_cpu, end_cpu, steps);
 	}
 
 	std::cout << "done" << std::endl;

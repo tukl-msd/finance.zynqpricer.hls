@@ -7,6 +7,9 @@
 //
 
 #include "iodev.hpp"
+#include "json_helper.hpp"
+
+#include "json/json.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,51 +110,73 @@ void call_read_thread(const unsigned cnt, unsigned *out, bool do_busy_wait) {
 template <typename T>
 class read_iterator {
 public:
-	read_iterator(const unsigned cnt, bool do_busy_wait=false) 
-		: cnt(cnt), 
-		  do_busy_wait(do_busy_wait), 
-		  axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE)
+	read_iterator(const std::vector<Json::Value> fifos, const unsigned cnt, 
+			const bool do_busy_wait=false) 
+		: total_read_cnt(cnt), 
+		  do_busy_wait(do_busy_wait),
+		  device_cnt(fifos.size())
 	{
-		// Receive Data FIFO Occupancy (RDFO)
-		rdfo = (unsigned*)axi_ctrl.get_dev_ptr(0x1C);
-		// Receive Data FIFO Data (RDFD)
-		rdfd = (T*)axi_ctrl.get_dev_ptr(0x20);
 		if (sizeof(T) != 4) {
 			std::cerr << "ERROR: only sizeof(T) = 4 supported" 
 					<< std::endl;
 			exit(-1);
 		}
-		
+		int i = 0;
+		for (auto fifo: fifos) {
+			devices.push_back(IODev(asHex(fifo["Offset Address"]), 
+						asHex(fifo["Range"])));
+		}
+	}
+
+	// get number of words available to read for fifo device
+	unsigned get_occupancy(IODev &dev) {
+		// Receive Data FIFO Occupancy (RDFO)
+		unsigned rdfo = *((unsigned*)dev.get_dev_ptr(0x1C));
+		return rdfo & 0x7fffffff;
+	}
+
+	// read next word from fifo device
+	// Warning: reading from a device when no data is available 
+	//          can lead to data corruption or even deadlock
+	T read_data(IODev &dev) {
+		// Receive Data FIFO Data (RDFD)
+		return *((T*)dev.get_dev_ptr(0x20));
 	}
 
 	bool next(T &out) {
-		if (i < cnt) {
+		if (words_read < total_read_cnt) {
 			while (avail == 0) {
-				avail = (*rdfo) & 0x7fffffff;
-				if (do_busy_wait)
-					nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
-				else
-					usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
+				// go to next device
+				current_device = (current_device + 1) % device_cnt;
+				avail = get_occupancy(devices[current_device]);
+				if (avail == 0) {
+					if (do_busy_wait)
+						nano_sleep(BUSY_WAIT_NANO_SLEEP_TIME);
+					else
+						usleep(BUSY_WAIT_MICRO_SLEEP_TIME);
+				}
 			}
 			--avail;
-			++i;
-			out = *rdfd;
+			++words_read;
+			out = read_data(devices[current_device]);
 			return true;
 		} else {
 			return false;
 		}
 	}
-private:
-	IODev axi_ctrl;
-	unsigned cnt;
-	bool do_busy_wait;
-	// Receive Data FIFO Occupancy (RDFO)
-	volatile unsigned *rdfo;
-	// Receive Data FIFO Data (RDFD)
-	volatile T *rdfd;
 
+private:
+	std::vector<IODev> devices;
+	unsigned total_read_cnt;
+	bool do_busy_wait;
+	unsigned device_cnt;
+
+	// current device
+	unsigned current_device = 0;
+	// how many words are available for current device
 	unsigned avail = 0;
-	unsigned i = 0;
+	// number of words read
+	unsigned words_read = 0;
 };
 
 
@@ -180,7 +205,44 @@ struct HestonParamsHW {
 };
 
 
+void start_heston_accelerator(
+		const Json::Value heston_sl,
+		const HestonParamsHW params_hw) {
+	// get device pointers
+	IODev axi_heston(asHex(heston_sl["heston_kernel"]["Offset Address"]), 
+			asHex(heston_sl["heston_kernel"]["Range"]));
+	volatile unsigned &acc_ctrl = *((unsigned*)axi_heston.get_dev_ptr(0x00));
+
+	// make sure heston accelerator is not running
+	bool acc_idle = acc_ctrl & 0x4;
+	if (!acc_idle) {
+		std::cerr << "Heston accelerator is already running." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// make sure random number generator is running
+	IODev axi_rng(asHex(heston_sl["mersenne_twister"]["Offset Address"]), 
+			asHex(heston_sl["mersenne_twister"]["Range"]));
+	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
+	if (rng_idle) {
+		std::cerr << "Start the Random Number generator before running"
+			<< " this application" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	// send parameters to accelerator, 64 bit aligned
+	for (unsigned i = 0x14, j = 0; i <= 0x7c; i = i + 8, ++j) {
+		*((unsigned*)axi_heston.get_dev_ptr(i)) = 
+				*((unsigned*)&params_hw + j);
+	}
+
+	// start heston accelerator
+	acc_ctrl = 1;
+}
+
+
 float heston_sl_hw(
+		const Json::Value bitstream,
 		// call option
 		float spot_price,
 		float reversion_rate,
@@ -198,26 +260,6 @@ float heston_sl_hw(
 		uint32_t step_cnt,
 		uint32_t path_cnt)
 {
-	// get device pointers
-	IODev axi_heston(AXI_HESTON_BASE_ADDR, AXI_HESTON_SIZE);
-	volatile unsigned &acc_ctrl = *((unsigned*)axi_heston.get_dev_ptr(0x00));
-
-	// make sure heston accelerator is not running
-	bool acc_idle = acc_ctrl & 0x4;
-	if (!acc_idle) {
-		std::cerr << "Heston accelerator is already running." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	// make sure random number generator is running
-	IODev axi_rng(AXI_RNG_BASE_ADDR, AXI_RNG_SIZE);
-	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
-	if (rng_idle) {
-		std::cerr << "Start the Random Number generator before running"
-			<< " this application" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	
 	// define heston hw parameters
 	// continuity correction, see Broadie, Glasserman, Kou (1997)
 	float barrier_hit_correction = 0.5826;
@@ -239,17 +281,25 @@ float heston_sl_hw(
 		barrier_hit_correction * sqrt_step_size,
 		path_cnt};
 
-	// send parameters to accelerator, 64 bit aligned
-	for (unsigned i = 0x14, j = 0; i <= 0x7c; i = i + 8, ++j) {
-		*((unsigned*)axi_heston.get_dev_ptr(i)) = 
-				*((unsigned*)&params_hw + j);
+	// find accelerators
+	std::vector<Json::Value> accelerators;
+	std::vector<Json::Value> fifos;
+	for (auto component: bitstream)
+		if (component["__class__"] == "heston_sl") {
+			accelerators.push_back(component);
+			fifos.push_back(component["axi_fifo"]);
+		}
+
+	// start accelerators
+	uint32_t acc_path_cnt = path_cnt / accelerators.size();
+	int path_cnt_remainder = path_cnt % accelerators.size();
+	for (auto acc: accelerators) {
+		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
+		start_heston_accelerator(acc, params_hw);
 	}
 
-	// start heston accelerator
-	acc_ctrl = 1;
-	
 	// setup read iterator
-	read_iterator<float> read_it(path_cnt);
+	read_iterator<float> read_it(fifos, path_cnt);
 
 	// calculate result
 	double result = 0;

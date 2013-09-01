@@ -23,4 +23,5 @@ echo "Reconfiguring heston single-level accelerators."
 cat ../bitstream/heston_sl_3x.bin > /dev/xdevcfg
 
 sudo bin/init_rng ../bitstream/heston_sl_3x.json
-sudo taskset -c 1 bin/run_both parameters/params_zynq_demo.json
+sudo bin/run_both parameters/params_zynq_demo.json \
+		../bitstream/heston_sl_3x.json

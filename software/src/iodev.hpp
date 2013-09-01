@@ -20,10 +20,17 @@ public:
 		return (void*)((char*)ptr + page_offset + addr_offset);
 	}
 
+	// define move semantic
+	IODev(IODev &&);
+
 private:
 	int fd;
 	int page_offset;
 	void *ptr;
+
+	// prevent copying
+	IODev(const IODev&) = delete;
+	IODev &operator=(const IODev&) = delete;
 };
 
 #endif

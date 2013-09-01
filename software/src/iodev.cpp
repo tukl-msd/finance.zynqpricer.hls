@@ -8,6 +8,8 @@
 
 #include "iodev.hpp"
 
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,8 +39,13 @@ IODev::IODev(unsigned base_addr, unsigned size) {
 }
 
 IODev::~IODev() {
-	unsigned page_size = sysconf(_SC_PAGESIZE);
-	munmap(ptr, page_size);
+	if (ptr != NULL) {
+		unsigned page_size = sysconf(_SC_PAGESIZE);
+		munmap(ptr, page_size);
+	}
 }
 
+IODev::IODev(IODev &&o) : fd(o.fd), page_offset(o.page_offset), ptr(o.ptr) {
+	o.ptr = NULL;
+}
 
