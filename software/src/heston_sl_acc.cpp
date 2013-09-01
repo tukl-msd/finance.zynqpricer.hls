@@ -219,6 +219,8 @@ float heston_sl_hw(
 	}
 	
 	// define heston hw parameters
+	// continuity correction, see Broadie, Glasserman, Kou (1997)
+	float barrier_hit_correction = 0.5826;
 	float step_size = time_to_maturity / step_cnt;
 	float sqrt_step_size = std::sqrt(step_size);
 	HestonParamsHW params_hw = {
@@ -234,7 +236,7 @@ float heston_sl_hw(
 		step_size,
 		step_size / 2,
 		sqrt_step_size,
-		(float) BARRIER_HIT_CORRECTION * sqrt_step_size,
+		barrier_hit_correction * sqrt_step_size,
 		path_cnt};
 
 	// send parameters to accelerator, 64 bit aligned

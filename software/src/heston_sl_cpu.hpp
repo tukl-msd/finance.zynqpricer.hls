@@ -30,7 +30,6 @@
 #include <chrono>
 #include <thread>
 #include <future>
-#include <numeric>
 
 std::mt19937 get_thread_rng();
 
@@ -56,15 +55,12 @@ struct HestonParamsSL {
 };
 
 
-// continuity correction, see Broadie, Glasserman, Kou (1997)
-#define BARRIER_HIT_CORRECTION 0.5826
-
-#define BLOCK_SIZE 64
-
 // single threaded version
-template<typename calc_t>
+template<typename calc_t, int BLOCK_SIZE>
 calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	// pre-compute
+	// continuity correction, see Broadie, Glasserman, Kou (1997)
+	calc_t barrier_hit_correction = 0.5826;
 	calc_t step_size = p.time_to_maturity / p.step_cnt;
 	calc_t sqrt_step_size = std::sqrt(step_size);
 	calc_t log_spot_price = std::log(p.spot_price);
@@ -74,8 +70,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	calc_t log_lower_barrier_value = std::log(p.lower_barrier_value);
 	calc_t log_upper_barrier_value = std::log(p.upper_barrier_value);
 	calc_t half_step_size = step_size / 2;
-	calc_t barrier_correction_factor = (calc_t)BARRIER_HIT_CORRECTION * 
-			sqrt_step_size;
+	calc_t barrier_correction_factor = barrier_hit_correction * sqrt_step_size;
 	// having any struct access in our inner most loop prevents
 	// msvc to vectorize our code => 6.15s instead of 5.26s (vectorized)
 	calc_t long_term_avg_vola = p.long_term_avg_vola;
@@ -152,8 +147,6 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	return (calc_t)result;
 }
 
-#define NT 4
-
 template<typename calc_t>
 calc_t heston_sl_cpu(
 		// call option
@@ -172,19 +165,18 @@ calc_t heston_sl_cpu(
 		// simulation params
 		uint32_t step_cnt,
 		uint32_t path_cnt) {
+	int nt = std::thread::hardware_concurrency();
 	HestonParamsSL<calc_t> p = {spot_price,
 		reversion_rate, long_term_avg_vola, vol_of_vol, riskless_rate,
 		vola_0, correlation, time_to_maturity, strike_price, lower_barrier_value,
-		upper_barrier_value, step_cnt, path_cnt / NT};
-	std::future<calc_t> f[NT];
-	for (int i = 0; i < NT; ++i)
-		f[i] = std::async(heston_sl_cpu_kernel<calc_t>, p);
+		upper_barrier_value, step_cnt, path_cnt / nt};
+	std::vector<std::future<calc_t> > f;
+	for (int i = 0; i < nt; ++i)
+		f.push_back(std::async(heston_sl_cpu_kernel<calc_t, 64>, p));
 	calc_t sum = 0;
-	for (int i = 0; i < NT; ++i)
+	for (int i = 0; i < nt; ++i)
 		sum += f[i].get();
-	return (calc_t)(sum / NT);
+	return (calc_t)(sum / nt);
 }
-
-
 
 #endif
