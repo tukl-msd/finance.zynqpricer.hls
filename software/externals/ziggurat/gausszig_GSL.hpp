@@ -8,9 +8,9 @@
 
 
 /*************************************************************************\
- * The code below is copyrighted by  Jochen Voss and part of the GSL 
+ * The code below is copyrighted by Jochen Voss and is part of the GSL 
  * library. I, Christian Brugger, have added a template C++ class wrapper
- * for the ziggurat method, that was written in C.
+ * for the ziggurat method that was originally written in C.
  */
 
 

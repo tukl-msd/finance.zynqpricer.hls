@@ -26,6 +26,7 @@ public:
 private:
 	int fd;
 	int page_offset;
+	unsigned mem_size;
 	void *ptr;
 
 	// prevent copying

@@ -27,7 +27,7 @@ IODev::IODev(unsigned base_addr, unsigned size) {
 	/* mmap the device into memory */
 	unsigned page_addr = (base_addr & (~(page_size-1)));
 	page_offset = base_addr - page_addr;
-	unsigned mem_size = base_addr + size - page_addr;
+	mem_size = base_addr + size - page_addr;
 	/* round mem_size up to next page_size */
 	mem_size = ((mem_size - 1) / page_size + 1) * page_size;
 	ptr = mmap(NULL, mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
@@ -40,12 +40,12 @@ IODev::IODev(unsigned base_addr, unsigned size) {
 
 IODev::~IODev() {
 	if (ptr != NULL) {
-		unsigned page_size = sysconf(_SC_PAGESIZE);
-		munmap(ptr, page_size);
+		munmap(ptr, mem_size);
 	}
 }
 
-IODev::IODev(IODev &&o) : fd(o.fd), page_offset(o.page_offset), ptr(o.ptr) {
+IODev::IODev(IODev &&o) : fd(o.fd), page_offset(o.page_offset), 
+		mem_size(o.mem_size), ptr(o.ptr) {
 	o.ptr = NULL;
 }
 
