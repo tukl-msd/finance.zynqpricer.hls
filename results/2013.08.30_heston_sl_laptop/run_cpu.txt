@@ -1,0 +1,8 @@
+
+D:\_share\data\Projekte\2013.08_Zynq_Linux\zynqheston\results\2013.08.30_heston_sl_laptop>run_cpu.exe params_msvc.json
+REF: result = 0.7487
+CPU: result = 0.74036
+CPU: Calculated 25000000000 steps in 177.197 seconds (1.41086e+008 steps / sec)
+done
+
+D:\_share\data\Projekte\2013.08_Zynq_Linux\zynqheston\results\2013.08.30_heston_sl_laptop>

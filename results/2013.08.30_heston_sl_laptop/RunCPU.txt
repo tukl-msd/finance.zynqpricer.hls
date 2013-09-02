@@ -1,0 +1,4 @@
+REF: result = 0.7487
+CPU: result = 0.740426
+CPU: Calculated 100000000 values in 179.35 seconds (557568 values / sec)
+done
