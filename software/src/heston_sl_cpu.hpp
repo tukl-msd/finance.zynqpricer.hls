@@ -172,7 +172,8 @@ calc_t heston_sl_cpu(
 		upper_barrier_value, step_cnt, path_cnt / nt};
 	std::vector<std::future<calc_t> > f;
 	for (int i = 0; i < nt; ++i)
-		f.push_back(std::async(heston_sl_cpu_kernel<calc_t, 64>, p));
+		f.push_back(std::async(std::launch::async, 
+					heston_sl_cpu_kernel<calc_t, 64>, p));
 	calc_t sum = 0;
 	for (int i = 0; i < nt; ++i)
 		sum += f[i].get();
