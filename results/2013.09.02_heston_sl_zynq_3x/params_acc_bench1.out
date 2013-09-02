@@ -1,0 +1,5 @@
+brugger@board-zc702-1:~/finance.zynqpricer.hls/software$ sudo bin/run_acc parameters/params_acc_bench1.json ../bitstream/heston_sl_3x.json
+REF: result = 0.7487
+ACC: result = 0.746267
+ACC: Calculated 10000000000 steps in 33.4173 seconds (2.99246e+08 steps / sec)
+done

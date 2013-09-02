@@ -1,0 +1,16 @@
+brugger@board-zc702-1:~/finance.zynqpricer.hls/software$ cat ../bitstream/empty.bin > /dev/xdevcfg
+brugger@board-zc702-1:~/finance.zynqpricer.hls/software$ bin/run_cpu parameters/params_cpu_bench1.json
+REF: result = 0.7487
+CPU: result = 0.746526
+CPU: Calculated 1000000000 steps in 93.9987 seconds (1.06384e+07 steps / sec)
+done
+brugger@board-zc702-1:~/finance.zynqpricer.hls/software$ bin/run_cpu parameters/params_cpu_bench1.json
+REF: result = 0.7487
+CPU: result = 0.748169
+CPU: Calculated 1000000000 steps in 92.8167 seconds (1.07739e+07 steps / sec)
+done
+brugger@board-zc702-1:~/finance.zynqpricer.hls/software$ bin/run_cpu parameters/params_cpu_bench1.json
+REF: result = 0.7487
+CPU: result = 0.74976
+CPU: Calculated 1000000000 steps in 92.7266 seconds (1.07844e+07 steps / sec)
+done
