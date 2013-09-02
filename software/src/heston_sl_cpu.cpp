@@ -19,7 +19,8 @@ std::mt19937 get_thread_rng() {
 	static std::mutex m;
 	{
 		std::lock_guard<std::mutex> lock(m);
-		if (rng_map.count(std::this_thread::get_id()) == 0) {
+		auto it = rng_map.find(std::this_thread::get_id());
+		if (it == rng_map.end()) {
 			rng_map[std::this_thread::get_id()] = std::mt19937(rng_cnt);
 			++rng_cnt;
 		}

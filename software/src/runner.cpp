@@ -31,7 +31,7 @@ void print_duration(std::chrono::steady_clock::time_point start,
 
 
 void check_usage(int argc, char *argv0, bool run_acc) {
-	if ((run_acc and argc != 3) or (!run_acc and argc != 2)) {
+	if ((run_acc && argc != 3) || (!run_acc && argc != 2)) {
 		std::cerr << "Usage: " << argv0 << " params.json" << 
 				(run_acc ? " bitstream.json" : "") << std::endl;
 		exit(-1);
