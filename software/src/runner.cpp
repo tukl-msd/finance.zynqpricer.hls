@@ -21,7 +21,7 @@
 
 
 void print_duration(std::chrono::steady_clock::time_point start, 
-		std::chrono::steady_clock::time_point end, unsigned steps) {
+		std::chrono::steady_clock::time_point end, uint64_t steps) {
 	double duration = std::chrono::duration<double>(
 		end - start).count();
 	std::cout << "Calculated " << steps << " steps in " << duration
@@ -66,7 +66,7 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 	// simulation params
 	auto simulation = params["simulation"];
 	uint32_t step_cnt = simulation["step_cnt"].asUInt();
-	uint32_t path_cnt = simulation["path_cnt"].asUInt();
+	uint64_t path_cnt = simulation["path_cnt"].asUInt64();
 	// reference values
 	auto ref = params["reference"];
 	float ref_price = ref["price"].asFloat();
@@ -75,7 +75,7 @@ int main_runner(int argc, char *argv[], bool run_cpu, bool run_acc)
 
 
 	// benchmark
-	uint32_t steps = step_cnt * path_cnt;
+	uint64_t steps = step_cnt * path_cnt;
 #ifdef __unix__
 	if (run_acc) {
 		auto start_acc = std::chrono::steady_clock::now();
