@@ -1,0 +1,10 @@
+brugger@tesla:~/finance.zynqpricer.hls/software> bin/run_cpu ../results/2013.08.30_heston_sl_laptop/params_msvc.json
+REF: result = 0.7487
+CPU: result = 0.740338
+CPU: Calculated 25000000000 steps in 93.4437 seconds (2.67541e+08 steps / sec)
+done
+brugger@tesla:~/finance.zynqpricer.hls/software> bin/run_cpu ../results/2013.08.30_heston_sl_laptop/params_msvc.json
+REF: result = 0.7487
+CPU: result = 0.740183
+CPU: Calculated 25000000000 steps in 93.3879 seconds (2.67701e+08 steps / sec)
+done
