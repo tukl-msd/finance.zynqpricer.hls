@@ -12,4 +12,4 @@
 
 #include <ap_int.h>
 
-void infinite_stream(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers);
+void mersenne_twister(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers);

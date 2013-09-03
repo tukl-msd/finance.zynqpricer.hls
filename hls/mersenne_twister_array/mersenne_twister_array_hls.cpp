@@ -8,15 +8,16 @@
 // Using: Xilinx Vivado HLS 2013.2
 //
 
-#include "infinite_stream_hls.hpp"
+#include "mersenne_twister_array_hls.hpp"
 
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <ap_shift_reg.h>
 
-typedef ap_uint<10> uint10_t;
+#define SIZE_AR_396 395
+#define SIZE_AR_227 225
 
-void infinite_stream(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers) {
+void mersenne_twister(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers) {
 	#pragma HLS interface ap_memory port=seeds
 	#pragma HLS resource core=RAM_1P metadata="-bus_bundle slv0" variable=seeds
 
@@ -25,61 +26,20 @@ void infinite_stream(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers)
 
 	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle slv0" variable=return
 
-	/*
-	//hls::stream<uint32_t> fifo_227;
-	uint32_t index_minus_0;
-
-	//static uint32_t shiftreg[624];
-	static ap_shift_reg<uint32_t, 624> reg;
-	uint32_t next;
-
-
-
-	for (unsigned cnt = 0; cnt < 1000; ++cnt) {
-
-		#pragma HLS PIPELINE II=1
-
-		if (cnt < 624)
-			index_minus_0 = seeds[cnt];
-		else
-			index_minus_0 = next; //shiftreg[623];
-		//	index_minus_0 = fifo_227.read();
-		random_numbers.write(index_minus_0);
-
-		//next = shiftreg[622];
-		//for (int N = 623 - 1; N >= 0; --N) {
-		//	if (N > 0)
-		//		shiftreg[N] = shiftreg[N-1];
-		//	else
-		//		shiftreg[N] = index_minus_0;
-		//}
-
-		next = reg.shift(index_minus_0, 622);
-
-		//fifo_227.write(index_minus_0);
-
-
-	}
-
-
-	for (unsigned cnt = 0; cnt < 624; ++cnt) {
-//		fifo_227.read();
-	}
-	*/
-
-
-	static ap_shift_reg<uint32_t, 225> sr_227;
-	//hls::stream<uint32_t> fifo_227;
-	static ap_shift_reg<uint32_t, 395> sr_396;
-	//hls::stream<uint32_t> fifo_396;
+	static uint32_t ar_227[SIZE_AR_227];
+	static ap_uint<8> cn_227 = 0;
+	#pragma HLS dependence variable=ar_227 false
+	static uint32_t ar_396[SIZE_AR_396];
+	static ap_uint<9> cn_396 = 0;
+	#pragma HLS dependence variable=ar_396 false
 
 	uint32_t index_minus_0, index_minus_396, index_minus_397;
-	bool index_minus_396_valid = false;
-	bool index_minus_397_valid = false;
-	uint10_t cnt = 0;
+	static bool index_minus_396_valid = false;
+	static bool index_minus_397_valid = false;
+	static ap_uint<10> cnt = 0;
 
 	uint32_t result_last;
-	bool result_last_valid = false;
+	static bool result_last_valid = false;
 
 	uint32_t sr_227_out;
 	uint32_t sr_396_out;
@@ -126,16 +86,19 @@ void infinite_stream(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers)
 				uint32_t result = index_m ^ twist;
 
 				// insert register to better meet timing
-				if (result_last_valid)
-					sr_227_out = sr_227.shift(result_last);
-					//fifo_227.write(result_last);
+				if (result_last_valid) {
+					sr_227_out = ar_227[cn_227];
+					ar_227[cn_227] = result_last;
+					cn_227 = (cn_227 < SIZE_AR_227 - 1) ? cn_227 + 1 : 0;
+				}
 				result_last = result;
 				result_last_valid = true;
 			}
 		}
 
-		//fifo_396.write(index_minus_0);
-		sr_396_out = sr_396.shift(index_minus_0);
+		sr_396_out = ar_396[cn_396];
+		ar_396[cn_396] = index_minus_0;
+		cn_396 = (cn_396 < SIZE_AR_396 - 1) ? cn_396 + 1 : 0;
 
 		if (cnt < 624)
 			++cnt;
