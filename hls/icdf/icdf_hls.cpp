@@ -18,7 +18,7 @@ ap_uint<4> count_leading_zeros(ap_uint<10> input) {
 	// go through bits from front to back
 	for (int i = 1; i <= 10; ++i) {
 		// increment as long as there are zeros
-		inc_lz &= (input & (1 << (10 - i))) == 0;
+		inc_lz &= input[10 - i]  == 0;
 		if (inc_lz)
 			lz = i;
 	}
@@ -45,13 +45,13 @@ interpolation_index get_next_interpolation_index(
 	ap_uint<6> total_exp_segment = 0;
 	while (true) {
 		#pragma HLS PIPELINE II=1
-		uint32_t input = stream_in.read();
+		ap_int<32> input = stream_in.read();
 
 		interpolation_index index;
-		index.sign = input & (1 << 31);
-		ap_uint<10> exp_bits = (input >> 21) & ((1 << 10) - 1);
-		index.linear_segment = input & (((1 << 4) - 1) << 17);
-		index.interpolation_x = input & (((1 << 17) - 1));
+		index.sign = input[31];
+		ap_uint<10> exp_bits = input(30, 21);
+		index.linear_segment = input(20, 17);
+		index.interpolation_x = input;
 
 		ap_uint<4> curr_exp_segment = count_leading_zeros(exp_bits);
 		total_exp_segment += curr_exp_segment;
