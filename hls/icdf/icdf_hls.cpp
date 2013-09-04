@@ -62,7 +62,7 @@ void icdf(
 		float res_float = *(reinterpret_cast<float*>(&unif_float));
 
 		// output when we found one leading zero
-		if (exp_bits != 0) {
+		if ((exp_bits != 0) || (leading_zeros >= 128 )) {
 			gaussian_rns.write(res_float);
 			leading_zeros = 0;
 		}
