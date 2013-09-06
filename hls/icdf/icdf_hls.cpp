@@ -80,9 +80,7 @@ float fixed_to_float(ap_ufixed<32,4> fixed, bool sign) {
 		res_int_bits(30, 23) = 1; // do not support denormalized numbers
 	}
 	res_int_bits[31] = sign;
-	float res = *(reinterpret_cast<float*>(&res_int_bits));
-	// return with new sign
-	return res;//get_with_new_sign((float) res, sign);
+	return *(reinterpret_cast<float*>(&res_int_bits));
 }
 
 
