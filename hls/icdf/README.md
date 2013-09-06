@@ -36,9 +36,11 @@ Python library for optimization and polynom fitting.
 
 *tested with version 0.12.0*
 
-### Matplotlib ###
+### Optional ###
 
-Plotting library for Python.
+#### Matplotlib ####
+
+Plotting library for Python to plot the approxiamtion.
 
 *tested with version 1.2.1*
 
