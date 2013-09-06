@@ -45,6 +45,9 @@ void mersenne_twister(uint32_t seeds[624], hls::stream<uint32_t> &random_numbers
 	uint32_t sr_396_out;
 
 	//for (unsigned i = 0; i < 1000; ++i) {
+	//TODO(brugger): check if #pragma HLS PIPELINE II=1 rewind can be used 
+	//    here instead of while(true) loop (officially not 
+	//    supported)
 	while (true) {
 
 		#pragma HLS PIPELINE II=1
