@@ -31,6 +31,7 @@ ap_uint<4> count_leading_zeros(ap_uint<10> input) {
 
 
 struct InterpolationIndex {
+	bool is_valid;
 	bool sign;
 	ap_uint<6> exponential_segment;
 	ap_uint<4> linear_segment;
@@ -38,35 +39,30 @@ struct InterpolationIndex {
 };
 
 
-// returns the next interpolation index by consumin one or more
-// random numbers from the input stream
+// returns the next interpolation index.
 // 	  converts the first bit to sign
 //    the following 10 bits to a 6 bit exponent
 //    the following 4 bits to a linear exponent
 //	  the last 17 bits are the interpolation position x
-InterpolationIndex get_next_interpolation_input(
-		hls::stream<uint32_t> &stream_in) {
-	ap_uint<6> total_exp_segment = 0;
+// This method may have to be called multiple times, to yield a valid
+// interpolation index.
+InterpolationIndex get_next_interpolation_input(uint32_t next_number) {
+	static ap_uint<6> total_exp_segment = 0;
 
-	#pragma HLS loop_tripcount min=1 max=6 avg=2
-	while (true) {
-		#pragma HLS PIPELINE II=1
-		ap_int<32> input = stream_in.read();
+	ap_int<32> input = next_number;
 
-		InterpolationIndex index;
-		index.sign = input[31];
-		ap_uint<10> exp_bits = input(30, 21);
-		index.linear_segment = input(20, 17);
-		index.interpolation_x = input;
+	InterpolationIndex index;
+	index.sign = input[31];
+	ap_uint<10> exp_bits = input(30, 21);
+	index.linear_segment = input(20, 17);
+	index.interpolation_x = input;
 
-		ap_uint<4> curr_exp_segment = count_leading_zeros(exp_bits);
-		total_exp_segment += curr_exp_segment;
-		index.exponential_segment = total_exp_segment;
+	ap_uint<4> curr_exp_segment = count_leading_zeros(exp_bits);
+	total_exp_segment += curr_exp_segment;
+	index.exponential_segment = total_exp_segment;
 
-		if ((curr_exp_segment != 10) || (total_exp_segment == 60)) {
-			return index;
-		}
-	}
+	index.is_valid = ((curr_exp_segment != 10) || (total_exp_segment == 60));
+	return index;
 }
 
 
@@ -100,7 +96,9 @@ void icdf(
 	#pragma HLS interface ap_ctrl_none port=return
 
 	for (int i = 0; i < 100; ++i) {
-		InterpolationIndex index = get_next_interpolation_input(uniform_rns);
+		#pragma HLS PIPELINE II=1
+		uint32_t input = uniform_rns.read();
+		InterpolationIndex index = get_next_interpolation_input(input);
 		//float res_float = icdf_linear_interpolated(index);
 
 		// cast to float
@@ -108,7 +106,8 @@ void icdf(
 		unif_float |= index.exponential_segment;
 		float res_float = *(reinterpret_cast<float*>(&unif_float));
 
-		gaussian_rns.write(res_float);
+		if (index.is_valid)
+			gaussian_rns.write(res_float);
 	}
 
 }
