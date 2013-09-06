@@ -74,7 +74,11 @@ float fixed_to_float(ap_ufixed<32,4> fixed, bool sign) {
 	float res_int = fixed_bits;
 	// substract 28 from exponent and set sign
 	ap_uint<32>  res_int_bits = *(reinterpret_cast<ap_uint<32>*>(&res_int));
-	res_int_bits(30, 23) = res_int_bits(30, 23) - 28;
+	if (res_int_bits(30, 23) > 28) {
+		res_int_bits(30, 23) = res_int_bits(30, 23) - 28;
+	} else {
+		res_int_bits(30, 23) = 1; // do not support denormalized numbers
+	}
 	res_int_bits[31] = sign;
 	float res = *(reinterpret_cast<float*>(&res_int_bits));
 	// return with new sign
@@ -95,8 +99,7 @@ float icdf_linear_interpolated(InterpolationIndex index) {
 }
 
 
-void icdf(
-		hls::stream<uint32_t> &uniform_rns,
+void icdf(hls::stream<uint32_t> &uniform_rns,
 		hls::stream<float> &gaussian_rns) {
 	#pragma HLS interface ap_fifo port=uniform_rns
 	#pragma HLS resource core=AXI4Stream variable=uniform_rns
@@ -104,19 +107,12 @@ void icdf(
 	#pragma HLS resource core=AXI4Stream variable=gaussian_rns
 	#pragma HLS interface ap_ctrl_none port=return
 
-	//#pragma HLS DATAFLOW
-	//#pragma HLS PIPELINE II=1
+	#pragma HLS PIPELINE II=1
+	uint32_t input = uniform_rns.read();
+	InterpolationIndex index = get_next_interpolation_input(input);
+	float res_float = icdf_linear_interpolated(index);
 
-	//for (int i = 0; i < 1; ++i) {
-	//for (int i = 0; i < 100; ++i) {
-		#pragma HLS PIPELINE II=1
-		uint32_t input = uniform_rns.read();
-		InterpolationIndex index = get_next_interpolation_input(input);
-		float res_float = icdf_linear_interpolated(index);
-
-		if (index.is_valid)
-			gaussian_rns.write(res_float);
-	//}
-
+	if (index.is_valid)
+		gaussian_rns.write(res_float);
 }
 
