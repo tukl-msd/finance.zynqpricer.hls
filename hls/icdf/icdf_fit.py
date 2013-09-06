@@ -21,7 +21,10 @@ import scipy
 import scipy.stats
 import scipy.optimize
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 
 def icdf(x):
@@ -34,10 +37,11 @@ def get_interpolation_coeffs_least_square(f, x1, x2, points=100, degree=2):
     Get list of coefficients for a least square fitted polynomial function 
     of specified degree.
 
-    For a degree of 2, three coefficients [c2, c1, c0] are returned for the polynomial:
-        poly(x) = c2 x^2 + c1 x + c0
-    The polynomial is fitted with a least square method evaluating specified points.
-    If the number of points is degree + 1, the polynomial goes through all points.
+    For a degree of 2, three coefficients [c2, c1, c0] are returned for the 
+    polynomial: poly(x) = c2 x^2 + c1 x + c0
+    The polynomial is fitted with a least square method evaluating specified 
+    points. If the number of points is degree + 1, the polynomial goes through 
+    all points.
     """
     x = np.linspace(x1, x2, points)
     return scipy.polyfit(x, f(x), degree)
@@ -48,12 +52,10 @@ def get_interpolation_coeffs_minimax(f, x1, x2, testpoints=1000, degree=2):
     Get list of coefficients for a minimax fitted polynomial function 
     of specified degree.
 
-    For a degree of 2, three coefficients [c2, c1, c0] are returned for the polynomial:
-        poly(x) = c2 x^2 + c1 x + c0
-    The polynomial is fitted with a minimax method evaluating specified testpoints
-    specified points.
-
-
+    For a degree of 2, three coefficients [c2, c1, c0] are returned for the 
+    polynomial: poly(x) = c2 x^2 + c1 x + c0
+    The polynomial is fitted with a minimax method evaluating specified 
+    testpoints specified points.
     """
     x_test = np.linspace(x1, x2, testpoints)
     y_true = f(x_test)
@@ -61,19 +63,25 @@ def get_interpolation_coeffs_minimax(f, x1, x2, testpoints=1000, degree=2):
     def get_max(coeffs):
         y_poly = np.poly1d(coeffs)(x_test)
         return np.max(np.abs(y_true - y_poly))
-    return scipy.optimize.minimize(get_max, coeffs_start, method='Nelder-Mead').x
+    return scipy.optimize.minimize(get_max, coeffs_start, 
+            method='Nelder-Mead').x
 
 
-def get_picewise_coeffs(f, x, degree=2, continuous=True, method='least-squares'):
+def get_picewise_coeffs(f, x, degree=2, continuous=True, 
+            method='least-squares'):
     """
-    Get picewise defined coefficients of specified degree. The list supporting points
-    are given by x. When continuous is false, there may be jumps at the supporting points.
+    Get picewise defined coefficients of specified degree. The list supporting 
+    points are given by x. When continuous is false, there may be jumps at the 
+    supporting points.
 
-    Method used can be 'least-square' or 'minimax'.
-    In the continuous case it makes no difference, however 'minimax' has much higher runtime.
+    Method can be 'least-square' or 'minimax'.
+
+    In the continuous case it makes no difference, however 'minimax' has much 
+    higher runtime.
     """
     coeffs = []
-    get_coeffs = get_interpolation_coeffs_least_square if method == 'least-squares' \
+    get_coeffs = \
+            get_interpolation_coeffs_least_square if method == 'least-squares' \
             else (get_interpolation_coeffs_minimax if method == 'minimax' \
             else None)
     for x1, x2 in zip(x[:-1], x[1:]):
@@ -84,8 +92,8 @@ def get_picewise_coeffs(f, x, degree=2, continuous=True, method='least-squares')
 
 def get_max_abs_error_of_peace(f, x1, x2, coeff, test_points=1000):
     """
-    Estimated the maximum absolute error of a single polynomial. The function and
-    the fitted polynomial are compared at linearly distributed test_points.
+    Estimated the maximum absolute error of a single polynomial. The function 
+    and the fitted polynomial are compared at linearly distributed test_points.
     """
     x = np.linspace(x1, x2, test_points)
     y_poly = np.poly1d(coeff)(x)
@@ -118,9 +126,10 @@ def plot_picewise_coeffs(f, x, coeffs, sub_points=100):
 
 def get_supporting_points(exponent_bits, linear_bits):
     """
-    Get supporting points that have a coarse exponential segments and fine linear
-    segments in the range of 0 to 0.5. The number of segments are given as bits.
-    These kind of support structure is optimal for icdf and hardware implementations.
+    Get supporting points that have a coarse exponential segments and fine 
+    linear segments in the range of 0 to 0.5. The number of segments are 
+    given as bits. These kind of support structure is optimal for icdf and 
+    hardware implementations.
     """
     points = [0.5]
     for exp in range(2**exponent_bits):
@@ -130,30 +139,54 @@ def get_supporting_points(exponent_bits, linear_bits):
     return sorted(points)
 
 
-def coeffs_to_lut(x, coeffs, c0_exp, c1_exp):
+def coeffs_to_lut(x, coeffs, c0_exp, c1_exp, file='coeffs.txt'):
     """
+    Writes coefficients to file and prints some information about the number 
+    format.
     """
-    #TODO(brugger): remove reversed and assert decreasing x, np.diff
-    for x1, x2, coeff in reversed(list(zip(x[:-1], x[1:], coeffs))):
-        assert len(coeff) == 2
-        coeff_new = [coeff[0] * (x2 - x1), coeff[0] * x1 + coeff[1]]
-        #print(coeff_new[0] * 2**c0_exp, coeff_new[1] * 2**c1_exp)
-        print("{{{}, {}}},".format(coeff_new[0], coeff_new[1]))
-    print("Length =", len(coeffs))
+    # assert decreasing order
+    assert np.all(np.diff(x) < 0)
+    # convert coeffs and write to file
+    coeffs_new = []
+    with open(file, 'w') as f:
+        for x1, x2, coeff in zip(x[:-1], x[1:], coeffs):
+            assert len(coeff) == 2
+            # convert argument range of polynom from [x1,x2] --> [0,1]
+            coeff_new = [coeff[0] * (x2 - x1), coeff[0] * x1 + coeff[1]]
+            coeffs_new.append(coeff_new)
+            f.write("{{{}, {}}},\n".format(coeff_new[0], coeff_new[1]))
+    print('Written {} coefficients to "{}"'.format(len(coeffs), file))
+
+    # find maximum coeffs --> get minimum necessary integer bits
+    for i, coeff_i in enumerate(zip(*coeffs_new)):
+        print("Coeff {} needs at least {} integer bits.".format(i, 
+                math.ceil(math.log2(max(np.abs(coeff_i))))))
+
+
+def plot_approximation(f, x, coeffs):
+    """
+    plots the approximation given by x and coeffs and the underlying function.
+    """
+    if plt is None:
+        print("WARNING: cannot plot approximation, matplotlib not available.")
+        return
+    plot_picewise_coeffs(f, x, coeffs)
+    plt.show()
 
 
 if __name__ == "__main__":
+    # to get all negative coefficients mirror the icdf and supporting points
     neg_icdf = lambda x: -icdf(x)
+    pos = get_supporting_points(exponent_bits=6, linear_bits=4)
+    pos = list(reversed(pos))
 
-    pos = get_supporting_points(exponent_bits=6, linear_bits=3)
     coeffs = get_picewise_coeffs(neg_icdf, pos, degree=1, 
             continuous=True, method='least-squares')
     print("{} coefficients generated for up to {} sigma.".format(
-            len(coeffs) * len(coeffs[0]), -icdf(min(pos))))
+            len(coeffs), -icdf(min(pos))))
 
     print_max_float_errors(neg_icdf, pos, coeffs)
 
-    #coeffs_to_lut(pos, coeffs, 40, 23)
+    coeffs_to_lut(pos, coeffs, 40, 23)
 
-    #plot_picewise_coeffs(neg_icdf, pos, coeffs)
-    #plt.show()
+    plot_approximation(neg_icdf, pos, coeffs)
