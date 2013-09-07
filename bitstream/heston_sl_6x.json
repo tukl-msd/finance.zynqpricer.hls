@@ -1,0 +1,93 @@
+{
+	"heston_sl_1": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43C00000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C10000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA00000",
+			"Range": "0xFFF"
+		}
+	},
+	"heston_sl_2": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43C30000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C20000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA01000",
+			"Range": "0xFFF"
+		}
+	},
+	"heston_sl_3": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43C80000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C40000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA02000",
+			"Range": "0xFFF"
+		}
+	},
+	"heston_sl_4": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43C90000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C50000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA03000",
+			"Range": "0xFFF"
+		}
+	},
+	"heston_sl_5": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43CA0000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C60000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA04000",
+			"Range": "0xFFF"
+		}
+	},
+	"heston_sl_6": {
+		"__class__": "heston_sl",
+		"mersenne_twister": {
+			"Offset Address": "0x43CB0000",
+			"Range": "0xFFFF"
+		},
+		"heston_kernel": {
+			"Offset Address": "0x43C70000",
+			"Range": "0xFFFF"
+		},
+		"axi_fifo": {
+			"Offset Address": "0x4AA05000",
+			"Range": "0xFFF"
+		}
+	}
+}
+
