@@ -6,14 +6,14 @@ Box Muller Transformation
 Transforms uniformly distributed random number into normal distributed ones.
 More information on [wikipedia](http://en.wikipedia.org/wiki/Box_muller)
 
-```
-    +------------------+
-    |    Box Muller    |
-    |------------------|
-    |Transformation to |  AXI Stream
-===>|normal distributed+===>
-    |  random nnmbers  |
-    +------------------+
+```     
+    +--------------------+    
+    |     Box Muller     |    
+    |--------------------|    
+    |     Uniform to     |  AXI Stream  
+===>| normal distributed +===>
+    |   random nnmbers   |    
+    +--------------------+    
 ```
 
 This transformation was used in the first version of the Zynq demo
