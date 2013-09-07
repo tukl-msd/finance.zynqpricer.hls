@@ -14,7 +14,7 @@ mkdir build
 
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=.. ..
-make init_rng run_both
+make init_rng run_both run_acc
 make install
 #ctest --output-on-failure .
 

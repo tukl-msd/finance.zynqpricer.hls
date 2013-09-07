@@ -20,8 +20,16 @@ sudo chown root:admin /dev/xdevcfg; sudo chmod 660 /dev/xdevcfg
 sudo chmod 660 /dev/mem
 
 echo "Reconfiguring heston single-level accelerators."
-cat ../bitstream/heston_sl_3x.bin > /dev/xdevcfg
+cat ../bitstream/heston_sl_6x.bin > /dev/xdevcfg
 
-sudo bin/init_rng ../bitstream/heston_sl_3x.json
-sudo bin/run_both parameters/params_zynq_demo.json \
-		../bitstream/heston_sl_3x.json
+# init rng
+sudo bin/init_rng ../bitstream/heston_sl_6x.json
+
+# run acc & cpu demo
+sudo bin/run_both parameters/params_zynq_demo_both.json \
+		../bitstream/heston_sl_6x.json
+
+# run acc only demo
+sudo taskset -c 1 bin/run_acc parameters/params_zynq_demo_acc.json \
+		../bitstream/heston_sl_6x.json
+
