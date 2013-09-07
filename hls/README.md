@@ -2,7 +2,7 @@ High Level Synthesis Cores
 ==========================
 
 Accelerators written with Vivado HLS for the Heston pipeline.
-Synthesized Cores can be found in the [ip folder](../ip)
+Synthesized Cores can be found in the [ip folder](../ip).
 
 Single-Level Heston Pipeline
 ----------------------------
@@ -18,3 +18,5 @@ Single-Level Heston Pipeline
  |  (array version) |    |   random nnmbers   |    |    thetic path    +===>| Monte Carlo paths |  
  +------------------+    +--------------------+    +-------------------+    +-------------------+
 ```
+
+See the subfolders for more details.
