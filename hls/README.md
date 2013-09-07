@@ -8,13 +8,13 @@ Single-Level Heston Pipeline
 ----------------------------
 
 ```
-          ^ AXI Slave                                                             ^ AXI Slave
-          |                                                                       |
- +--------+---------+    +------------------+    +------------------+    +--------+---------+
- | Mersenne Twister |    |      ICDF        |    |    Antithetic    |    | Heston Kernel SL |
- |------------------|    |------------------|    |------------------|    |------------------|
- |  Uniform Random  |    |Transformation to |    |Generate variance +===>|Calculate single- |  AXI Stream
- | Number Generator +===>|normal distributed+===>|  reducing anti-  |    |   level Heston   +===>
- |                  |    |  random nnmbers  |    |   thetic path    +===>|Monte Carlo paths |  
- +------------------+    +------------------+    +------------------+    +------------------+
+          ^ AXI Slave                                                                ^ AXI Slave
+          |                                                                          |
+ +--------+---------+    +--------------------+    +-------------------+    +--------+----------+
+ | Mersenne Twister |    |       ICDF         |    |     Antithetic    |    | Heston Kernel SL  |
+ |------------------|    |--------------------|    |-------------------|    |-------------------|
+ |  Uniform random  |    | Transformation to  |    | Generate variance +===>| Calculate single- |  AXI Stream
+ | number generator +===>| normal distributed +===>|   reducing anti-  |    |   level Heston    +===>
+ |  (array version) |    |   random nnmbers   |    |    thetic path    +===>| Monte Carlo paths |  
+ +------------------+    +--------------------+    +-------------------+    +-------------------+
 ```
