@@ -8,4 +8,5 @@ More information on [wikipedia](http://en.wikipedia.org/wiki/Box_muller)
 
 This transformation was used in the first version of the Zynq demo
 because of its unbeatable brevity (10 lines of code). However the `sin`, 
-`cos` and `log` operations map very bad to FPGA ressources.
+`cos` and `log` operations map very bad to FPGA ressources. For this 
+reason newer designs use an ICDF based method.
