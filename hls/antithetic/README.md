@@ -12,9 +12,9 @@ and additionally improves the accuracy. The technique is further described on
 ```
     +-------------------+    
     |     Antithetic    |    
-    |-------------------|    
+    |-------------------|  AXI Stream      
     | Generate variance +===>
-===>|   reducing anti-  | AXI Stream   
+===>|   reducing anti-  | 
     |    thetic path    +===>
     +-------------------+    
 ```
