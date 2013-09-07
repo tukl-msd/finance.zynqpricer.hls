@@ -3,7 +3,7 @@ ICDF - Random number transformation
 
 Transforms uniformly distributed random numbers into normal distributed
 random numbers based on the inverse commulative density function of the
-normal distribution.
+normal distribution. It mapps very efficiently to FPGA ressources.
 
 To generate and analyze the coefficients run:
 ```
