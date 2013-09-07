@@ -55,7 +55,7 @@ def get_interpolation_coeffs_minimax(f, x1, x2, testpoints=1000, degree=2):
     For a degree of 2, three coefficients [c2, c1, c0] are returned for the 
     polynomial: poly(x) = c2 x^2 + c1 x + c0
     The polynomial is fitted with a minimax method evaluating specified 
-    testpoints specified points.
+    testpoints.
     """
     x_test = np.linspace(x1, x2, testpoints)
     y_true = f(x_test)
@@ -128,7 +128,7 @@ def get_supporting_points(exponent_bits, linear_bits):
     """
     Get supporting points that have a coarse exponential segments and fine 
     linear segments in the range of 0 to 0.5. The number of segments are 
-    given as bits. These kind of support structure is optimal for icdf and 
+    given as bits. This kind of support structure is optimal for icdf and 
     hardware implementations.
     """
     points = [0.5]
@@ -141,7 +141,7 @@ def get_supporting_points(exponent_bits, linear_bits):
 
 def coeffs_to_lut(x, coeffs, c0_exp, c1_exp, file='coeffs.txt'):
     """
-    Writes coefficients to file and prints some information about the number 
+    Writes coefficients to file and prints precision information about the number 
     format.
     """
     # assert decreasing order
