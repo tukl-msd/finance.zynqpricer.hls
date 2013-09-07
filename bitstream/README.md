@@ -12,12 +12,12 @@ cat heston_sl_6x.bin > /dev/xdevcfg
 
 Each bitstream comes with additional meta data:
 
-- *.bin: the FPGA bitstream itself
-- *.json: a definition of memory mapped AXI components. Contains type, address 
+- bin: the FPGA bitstream itself
+- json: a definition of memory mapped AXI components. Contains type, address 
   offset and range information.
-- *.pdf: block diagram of the architecture from Vivado 
-- *.png: floorplan of the architecture
-- *.xls: ressource report of the architecture
+- pdf: block diagram of the architecture from Vivado 
+- png: floorplan of the architecture
+- xls: ressource report of the architecture
 
 
 Available bitstreams
