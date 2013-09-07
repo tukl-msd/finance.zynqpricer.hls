@@ -9,9 +9,15 @@ with the following command
 ```
 cat heston_sl_6x.bin > /dev/xdevcfg
 ```
-Reconfiguration takes less than 200 ms.
 
-The bitstreams a
+Each bitstream comes with additional meta data:
+
+- *.bin: the FPGA bitstream itself
+- *.json: a definition of memory mapped AXI components. Contains type, address 
+  offset and range information.
+- *.pdf: block diagram of the architecture from Vivado 
+- *.png: floorplan of the architecture
+- *.xls: ressource report of the architecture
 
 
 Available bitstreams
@@ -28,15 +34,13 @@ An empty bitstream. When loaded it deletes all the configurtions from the FPGA.
 Contains three Heston single-level pipelines based on the Box Muller transformation. 
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
-![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/
-finance.zynqpricer.hls/raw/master/bitstream/heston_sl_3x.png)
+![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_3x.png)
 
 ###heston_sl_6x.bin###
 
 Contains six Heston single-level pipelines based on the ICDF transformation. 
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
-![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/\
-finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
+![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
 
 
