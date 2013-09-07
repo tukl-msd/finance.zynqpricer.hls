@@ -14,7 +14,7 @@ Single-Level Heston Pipeline
  | Mersenne Twister |    |      ICDF        |    |    Antithetic    |    | Heston Kernel SL |
  |------------------|    |------------------|    |------------------|    |------------------|
  |  Uniform Random  |    |Transformation to |    |Generate variance +--->|Calculate single- |
- | Number Generator +--->|normal distributed+--->|  reducing anti-  |    |level Heston Monte+-->
+ | Number Generator +--->|normal distributed+--->|  reducing anti-  |    |level Heston Monte+--->
  |                  |    |  random nnmbers  |    |   thetic path    +--->|  Carlo paths.    |
  +------------------+    +------------------+    +------------------+    +------------------+
 ```
