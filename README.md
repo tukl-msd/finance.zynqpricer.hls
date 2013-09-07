@@ -35,7 +35,7 @@ Repository Structure
 --------------------
 
 - bitstream: FPGA bitstreams containing accelerators for Zynq
-- hls: Accelerators written for Vivado HLS
+- hls: Accelerators written with Vivado HLS
 - ip: Packed HLS accelerators, that can be instanciated and synthesized 
   with Vivado
 - results: deliverables of this project
