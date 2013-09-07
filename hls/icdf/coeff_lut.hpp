@@ -14,7 +14,7 @@
 #include <ap_int.h>
 #include <ap_fixed.h>
 
-// y =  coeff_1 * x - coeff_2
+// y =  coeff_1 * x + coeff_2
 // use maximum 72 bit, so that it fits into one BRAM line
 struct InterpolationCoefficients {
 	ap_ufixed<24,-4> coeff_1;
