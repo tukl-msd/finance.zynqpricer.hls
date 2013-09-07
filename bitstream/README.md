@@ -36,7 +36,7 @@ finance.zynqpricer.hls/raw/master/bitstream/heston_sl_3x.png)
 Contains six Heston single-level pipelines based on the ICDF transformation. 
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
-![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/
+![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/\
 finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
 
 
