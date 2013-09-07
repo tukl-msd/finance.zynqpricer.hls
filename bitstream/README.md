@@ -13,8 +13,9 @@ cat heston_sl_6x.bin > /dev/xdevcfg
 Each bitstream comes with additional meta data:
 
 - bin: the FPGA bitstream itself
-- json: a definition of memory mapped AXI components. Contains type, address 
-  offset and range information.
+- json: a definition of address mapping for memory mapped AXI components. 
+  Contains information about address offset and address range for each component
+  in a parsable form.
 - pdf: block diagram of the architecture from Vivado 
 - png: floorplan of the architecture
 - xls: ressource report of the architecture
