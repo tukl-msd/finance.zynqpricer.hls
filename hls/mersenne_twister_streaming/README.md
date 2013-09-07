@@ -1,8 +1,8 @@
 Mersenne Twister - Random number generator
 ==========================================
 
-**Warning:** this version is based on hls::stream which is broken in Vivado 
-HLS 2013.2. Use the array version instead.
+**Warning:** *this version is broken in Vivado HLS 2013.2.*
+*Use the [array version](mersenne_twister_array) instead.*
 
 Generate uniform distributed random numbers used for Monte Carlo simulations.
 
