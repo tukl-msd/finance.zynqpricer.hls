@@ -8,3 +8,8 @@ REF: result = 0.7487
 ACC: result = 0.747014
 ACC: Calculated 10000000000 steps in 16.6935 seconds (5.99037e+08 steps / sec)
 done
+brugger@board-zedboard-3:~/finance.zynqpricer.hls/software$ sudo taskset -c 1 bin/run_acc parameters/params_acc_bench2.json ../bitstream/heston_sl_6x.json
+REF: result = 0.7487
+ACC: result = 0.749758
+ACC: Calculated 100000000000 steps in 166.876 seconds (5.99247e+08 steps / sec)
+done
