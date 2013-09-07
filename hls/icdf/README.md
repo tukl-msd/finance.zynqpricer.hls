@@ -5,6 +5,16 @@ Transforms uniformly distributed random numbers into normal distributed
 random numbers based on the inverse commulative density function of the
 normal distribution. It mapps very efficiently to FPGA ressources.
 
+```     
+    +--------------------+    
+    |        ICDF        |    
+    |--------------------|    
+    |     Uniform to     |  AXI Stream  
+===>| normal distributed +===>
+    |   random nnmbers   |    
+    +--------------------+    
+```
+
 To generate and analyze the coefficients run:
 ```
 python3 icdf_fit.py
