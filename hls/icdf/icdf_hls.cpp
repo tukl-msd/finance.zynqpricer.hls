@@ -90,7 +90,7 @@ float icdf_linear_interpolated(InterpolationIndex index) {
 	#pragma HLS data_pack variable=coeff_lut
 	ap_ufixed<17,0> x = *(reinterpret_cast<ap_ufixed<17,0>*>(
 			&index.interpolation_x));
-	ap_ufixed<41,-4> prod = coeffs.coeff_1 * x;
+	ap_ufixed<47,0> prod = coeffs.coeff_1 * x;
 	ap_ufixed<32,4> res_fixed = prod + coeffs.coeff_2;
 	float res = fixed_to_float(res_fixed, index.sign);
 	return res;
