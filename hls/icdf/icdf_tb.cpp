@@ -16,42 +16,33 @@
 
 #include "mt19937ar.h"
 
-float golden_model(uint32_t a) {
-	a &= 8388607;
-	a |= (127 << 23);
-	a |= (1 << 31);
-	return *(reinterpret_cast<float*>(&a));
-}
 
 int main(int argc, char *argv[]) {
 	init_genrand(0);
 	hls::stream<uint32_t> uniform_rns;
 	hls::stream<float> gaussian_rns;
 
-	uint32_t arn[100];
-	for (int i = 0; i < 100; ++i) {
+	const int N = 1000;
+
+	uint32_t arn[N];
+	for (int i = 0; i < N; ++i) {
 		uint32_t rn = genrand_int32();
 		arn[i] = rn;
 		uniform_rns.write(rn);
 	}
 
-	icdf(uniform_rns, gaussian_rns);
+	for (int i = 0; i < N; ++i)
+		icdf(uniform_rns, gaussian_rns);
 
 	int i = 0;
-	bool failed = false;
 	while (gaussian_rns.size() > 0) {
-		float cpu_res = golden_model(arn[i]);
 		float acc_res = gaussian_rns.read();
-		if (cpu_res != acc_res) {
-			std::cout << arn[i] << " " <<  cpu_res << " != " << acc_res << std::endl;
-			failed = true;
-		}
+		std::cout << i << ": " <<  acc_res << std::endl;
 		++i;
 	}
 
 	std::cout << "done." << std::endl;
 
 	return 0;
-	return failed;
 }
 

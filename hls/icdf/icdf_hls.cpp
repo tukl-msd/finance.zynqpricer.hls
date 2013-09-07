@@ -74,11 +74,13 @@ float fixed_to_float(ap_ufixed<32,4> fixed, bool sign) {
 	float res_int = fixed_bits;
 	// substract 28 from exponent and set sign
 	ap_uint<32>  res_int_bits = *(reinterpret_cast<ap_uint<32>*>(&res_int));
-	res_int_bits(30, 23) = res_int_bits(30, 23) - 28;
+	if (res_int_bits(30, 23) > 28) {
+		res_int_bits(30, 23) = res_int_bits(30, 23) - 28;
+	} else {
+		res_int_bits(30, 23) = 1; // do not support denormalized numbers
+	}
 	res_int_bits[31] = sign;
-	float res = *(reinterpret_cast<float*>(&res_int_bits));
-	// return with new sign
-	return res;//get_with_new_sign((float) res, sign);
+	return *(reinterpret_cast<float*>(&res_int_bits));
 }
 
 
@@ -88,15 +90,14 @@ float icdf_linear_interpolated(InterpolationIndex index) {
 	#pragma HLS data_pack variable=coeff_lut
 	ap_ufixed<17,0> x = *(reinterpret_cast<ap_ufixed<17,0>*>(
 			&index.interpolation_x));
-	ap_ufixed<41,-4> prod = coeffs.coeff_1 * x;
+	ap_ufixed<47,0> prod = coeffs.coeff_1 * x;
 	ap_ufixed<32,4> res_fixed = prod + coeffs.coeff_2;
 	float res = fixed_to_float(res_fixed, index.sign);
 	return res;
 }
 
 
-void icdf(
-		hls::stream<uint32_t> &uniform_rns,
+void icdf(hls::stream<uint32_t> &uniform_rns,
 		hls::stream<float> &gaussian_rns) {
 	#pragma HLS interface ap_fifo port=uniform_rns
 	#pragma HLS resource core=AXI4Stream variable=uniform_rns
@@ -104,19 +105,12 @@ void icdf(
 	#pragma HLS resource core=AXI4Stream variable=gaussian_rns
 	#pragma HLS interface ap_ctrl_none port=return
 
-	//#pragma HLS DATAFLOW
-	//#pragma HLS PIPELINE II=1
+	#pragma HLS PIPELINE II=1
+	uint32_t input = uniform_rns.read();
+	InterpolationIndex index = get_next_interpolation_input(input);
+	float res_float = icdf_linear_interpolated(index);
 
-	//for (int i = 0; i < 1; ++i) {
-	//for (int i = 0; i < 100; ++i) {
-		#pragma HLS PIPELINE II=1
-		uint32_t input = uniform_rns.read();
-		InterpolationIndex index = get_next_interpolation_input(input);
-		float res_float = icdf_linear_interpolated(index);
-
-		if (index.is_valid)
-			gaussian_rns.write(res_float);
-	//}
-
+	if (index.is_valid)
+		gaussian_rns.write(res_float);
 }
 

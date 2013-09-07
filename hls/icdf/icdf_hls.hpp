@@ -14,8 +14,6 @@
 #include <hls_stream.h>
 #include <ap_int.h>
 
-void icdf(
-		hls::stream<uint32_t> &uniform_rns,
-		hls::stream<float> &gaussian_rns);
+void icdf(hls::stream<uint32_t> &uniform_rns, hls::stream<float> &gaussian_rns);
 
 #endif

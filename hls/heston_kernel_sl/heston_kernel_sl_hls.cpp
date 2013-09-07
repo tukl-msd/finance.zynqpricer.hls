@@ -15,6 +15,15 @@
 #include <stdint.h>
 #include <limits>
 
+struct state_t {
+	calc_t stock;
+	calc_t vola;
+	bool barrier_hit;
+};
+
+// For next interface change
+//TODO(brugger): remove step_size
+//TODO(brugger): path_cnt should be uint64_t
 void heston_kernel_sl(
 		// call option
 		calc_t log_spot_price,
@@ -84,9 +93,8 @@ void heston_kernel_sl(
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	calc_t stock[BLOCK_SIZE];
-	calc_t vola[BLOCK_SIZE];
-	bool barrier_hit[BLOCK_SIZE];
+	state_t states[BLOCK_SIZE];
+	#pragma HLS data_pack variable=states
 
 	for (uint32_t block = 0; block < path_cnt; block += BLOCK_SIZE) {
 		for (uint32_t step = 0; step != step_cnt; ++step) {
@@ -94,41 +102,42 @@ void heston_kernel_sl(
 			for (uint32_t i = 0; i != BLOCK_SIZE; ++i) {
 				#pragma HLS PIPELINE II=1
 
-				calc_t l_stock, l_vola;
-				bool l_barrier_hit;
+				state_t l_state;
 				// initialize
 				if (step == 0) {
-					l_stock = log_spot_price;
-					l_vola = vola_0;
-					l_barrier_hit = false;
+					l_state.stock = log_spot_price;
+					l_state.vola = vola_0;
+					l_state.barrier_hit = false;
 				} else {
-					l_stock = stock[i];
-					l_vola = vola[i];
-					l_barrier_hit = barrier_hit[i];
+					l_state = states[i];
 				}
 
 				// calcualte next step
-				calc_t max_vola = MAX((calc_t) 0., vola[i]);
+				state_t n_state;
+				calc_t max_vola = MAX((calc_t) 0., l_state.vola);
 				calc_t sqrt_vola = hls::sqrtf(max_vola);
-				stock[i] = l_stock + (double_riskless_rate - max_vola) *
+				n_state.stock = l_state.stock + (double_riskless_rate - max_vola) *
 						half_step_size + sqrt_step_size * sqrt_vola *
 						gaussian_rn1.read();
-				vola[i] = l_vola + reversion_rate_TIMES_step_size *
+				n_state.vola = l_state.vola + reversion_rate_TIMES_step_size *
 						(long_term_avg_vola - max_vola) +
 						vol_of_vol_TIMES_sqrt_step_size * sqrt_vola *
 						(calc_t) gaussian_rn2.read();
 				calc_t barrier_correction = barrier_correction_factor *
 						sqrt_vola;
-				barrier_hit[i] = l_barrier_hit |  (stock[i] <
+				#pragma HLS RESOURCE variable=barrier_correction \
+						core=FMul_meddsp
+				n_state.barrier_hit = l_state.barrier_hit |  (n_state.stock <
 						log_lower_barrier_value + barrier_correction) |
-						(stock[i] > log_upper_barrier_value -
+						(n_state.stock > log_upper_barrier_value -
 						barrier_correction);
+				states[i] = n_state;
 
 				// write out
 				if (step + 1 == step_cnt && (block + i) < path_cnt)
-					prices.write(barrier_hit[i] ?
+					prices.write(n_state.barrier_hit ?
 							-std::numeric_limits<calc_t>::infinity() :
-							stock[i]);
+							n_state.stock);
 
 			}
 		}
