@@ -1,7 +1,7 @@
 software
 ========
 
-Linux drivers for the accelerators and optimized CPU implementations for heston
+Linux drivers for the accelerators and optimized CPU implementations for Heston Monte Carlo simulations.
 
 Also contains Zynq demo.
 
@@ -52,12 +52,6 @@ All dependencies can be installed via the package manager. For Linaro Ubuntu run
 sudo apt-get install g++ make cmake
 ```
 
-### CMake 2.8.0 ###
-  
-The main build system. The command ```cmake``` has to be in ```$PATH```.
-
-*tested with version 2.8.10.1*
-
 ### G++ 4.7 ###
 
 The main compiler. Has to support most of the new C++11 features. The command ```g++``` has to be in ```$PATH```.
@@ -69,6 +63,12 @@ The main compiler. Has to support most of the new C++11 features. The command ``
 Backend build system. The command ```make``` has to be in ```$PATH```.
 
 *tested with version 3.81*
+
+### CMake 2.8.0 ###
+  
+The main build system. The command ```cmake``` has to be in ```$PATH```.
+
+*tested with version 2.8.10.1*
 
 
 Dependencies Windows:
