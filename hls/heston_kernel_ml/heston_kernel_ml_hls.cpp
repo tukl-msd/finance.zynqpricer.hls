@@ -89,6 +89,9 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	// write block size to stream
+	prices.write(BLOCK_SIZE);
+
 	state_t state_coarse[BLOCK_SIZE];
 	#pragma HLS data_pack variable=state_coarse
 	state_t state_fine[BLOCK_SIZE];
@@ -117,7 +120,7 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 						l_state_fine = get_init_state(params);
 						l_w_both = get_w_zero();
 					} else {
-						l_state_coarse = state_fine[block_i];
+						l_state_coarse = state_coarse[block_i];
 						l_state_fine = state_fine[block_i];
 						l_w_both = w_both[block_i];
 					}
@@ -153,8 +156,7 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 					//
 					// write out
 					//
-					if ((step == params.step_cnt) &&
-							((block + block_i) < params.path_cnt)) {
+					if (step == params.step_cnt) {
 						if (is_fine) {
 							prices.write(get_log_price(n_state_fine));
 						} else {

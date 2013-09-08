@@ -68,7 +68,16 @@ int main(int argc, char *argv[]) {
 	unsigned ml_constant = 4;
 	bool do_multilevel = true;
 	unsigned step_cnt = 256; //256;
-	unsigned path_cnt = 512; //10000;
+	const unsigned path_cnt = 512; //10000;
+
+	if (step_cnt % ml_constant != 0) {
+		std::cerr << "ERROR: step_cnt % ml_constant != 0" << std::endl;
+		return 1;
+	}
+	if (path_cnt % BLOCK_SIZE != 0) {
+		std::cerr << "ERROR: path_cnt % BLOCK_SIZE != 0" << std::endl;
+		return 1;
+	}
 
 	hls::stream<calc_t> gaussian_rn1;
 	fill_gaussian_rng_stream(gaussian_rn1, step_cnt *
@@ -109,16 +118,27 @@ int main(int argc, char *argv[]) {
 
 	heston_kernel_ml(params, gaussian_rn1, gaussian_rn2, prices);
 
-	if (prices.size() != path_cnt * 2) {
+	if (prices.size() != path_cnt * 2 + 1) {
 		std::cerr << "Wrong number of prices returned." << std::endl;
 		return -1;
 	}
 
+	int block_size = prices.read();
+	float res_prices[path_cnt * 2];
+	for (unsigned i = 0; i < path_cnt * 2; ++i) {
+		res_prices[i] = std::max(0., std::exp(prices.read()) - strike_price);
+	}
+
+	// sort fine and coarse paths
 	double result_fine = 0;
 	double result_coarse = 0;
 	for (unsigned i = 0; i < path_cnt; ++i) {
-		result_fine += std::max(0., std::exp(prices.read()) - strike_price);
-		result_coarse += std::max(0., std::exp(prices.read()) - strike_price);
+		int block = i / block_size;
+		int block_i = i % block_size;
+		result_fine += res_prices[2 * block * block_size + block_i];
+		result_coarse += res_prices[(2 * block + 1) * block_size + block_i];
+		std::cout << i << " - " << res_prices[2 * block * block_size + block_i]
+		        << " - " << res_prices[(2 * block + 1) * block_size + block_i] << std::endl;
 	}
 	result_fine /= path_cnt;
 	result_coarse /= path_cnt;
