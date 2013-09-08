@@ -9,7 +9,7 @@ Generates variance reducing antithetic path for normal distributed random number
     |-------------------|  AXI Stream      
     | Generate variance +===>
 ===>|   reducing anti-  | 
-    |    thetic path    +===>
+    |    thetic paths   +===>
     +-------------------+    
 ```
 
