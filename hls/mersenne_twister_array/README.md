@@ -15,4 +15,4 @@ Generate uniform distributed random numbers used for Monte Carlo simulations.
 +------------------+
 ```
 
-The seed can be configured over the memmory mapped AXI slave interface.
+The seed can be configured over the memory mapped AXI slave interface.
