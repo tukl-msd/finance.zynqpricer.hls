@@ -11,8 +11,8 @@ The Zynq platform offers some very appealing features for rapid accelerator
 development including:
 - Full features Linux distribution (Linaro Ubuntu) running on ARM with ssh 
   access, packet manager, threading support
-- Can run almost any cross platform software package (Python + Numpy, Boost, 
-  OpenMPI, GIT, GCC, QuantLib, etc.)
+- Can run almost any cross platform software package (QuantLib, scikit-learn, 
+  SystemC, Python, Boost, OpenMPI, Git, G++, etc.)
 - Dynamic reconfiguration of the FPGA in < 200 ms from Linux command line,
   during runtime
 - Low latency (~ 100 ns) and high bandwidth (1.6 GiB/s) interconnect between 
