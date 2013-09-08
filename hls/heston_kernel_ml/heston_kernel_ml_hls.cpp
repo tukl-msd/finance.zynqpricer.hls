@@ -21,125 +21,147 @@ struct state_t {
 	bool barrier_hit;
 };
 
-// For next interface change
-//TODO(brugger): remove step_size
-//TODO(brugger): path_cnt should be uint64_t
-//TODO(brugger): add correlation
-void heston_kernel_ml(
-		// call option
-		calc_t log_spot_price,
-		calc_t reversion_rate_TIMES_step_size,
-		calc_t long_term_avg_vola,
-		calc_t vol_of_vol_TIMES_sqrt_step_size,
-		calc_t double_riskless_rate, // = 2 * riskless_rate
-		calc_t vola_0,
-//		calc_t correlation,
-//		calc_t time_to_maturity,
-	    // both knockout
-		calc_t log_lower_barrier_value,
-		calc_t log_upper_barrier_value,
-		// simulation params
-		uint32_t step_cnt,
-		calc_t step_size, // = time_to_maturity / step_cnt
-		calc_t half_step_size, // = step_size / 2
-		calc_t sqrt_step_size, // = sqrt(step_size)
-		calc_t barrier_correction_factor, // = BARRIER_HIT_CORRECTION * sqrt_step_size
-		uint32_t path_cnt,
+struct w_both_t {
+	calc_t w_stock;
+	calc_t w_vola;
+};
 
-		hls::stream<calc_t> &gaussian_rn1,
-		hls::stream<calc_t> &gaussian_rn2,
-		hls::stream<calc_t> &prices)
-{
-	#pragma HLS interface ap_none port=log_spot_price
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=log_spot_price
-	#pragma HLS interface ap_none port=reversion_rate_TIMES_step_size
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=reversion_rate_TIMES_step_size
-	#pragma HLS interface ap_none port=long_term_avg_vola
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=long_term_avg_vola
-	#pragma HLS interface ap_none port=vol_of_vol_TIMES_sqrt_step_size
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=vol_of_vol_TIMES_sqrt_step_size
-	#pragma HLS interface ap_none port=double_riskless_rate
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=double_riskless_rate
-	#pragma HLS interface ap_none port=vola_0
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=vola_0
-//	#pragma HLS interface ap_none port=correlation
-//	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=correlation
-//	#pragma HLS interface ap_none port=time_to_maturity
-//	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=time_to_maturity
-	#pragma HLS interface ap_none port=log_lower_barrier_value
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=log_lower_barrier_value
-	#pragma HLS interface ap_none port=log_upper_barrier_value
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=log_upper_barrier_value
-	#pragma HLS interface ap_none port=step_cnt
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=step_cnt
-	#pragma HLS interface ap_none port=step_size
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=step_size
-	#pragma HLS interface ap_none port=half_step_size
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=half_step_size
-	#pragma HLS interface ap_none port=sqrt_step_size
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=sqrt_step_size
-	#pragma HLS interface ap_none port=barrier_correction_factor
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=barrier_correction_factor
-	#pragma HLS interface ap_none port=path_cnt
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=path_cnt
+state_t get_init_state(const params_ml params) {
+	state_t state;
+	state.stock = params.log_spot_price;
+	state.vola = params.vola_0;
+	state.barrier_hit = false;
+	return state;
+}
 
+w_both_t get_w_zero() {
+	w_both_t zero = {0, 0};
+	return zero;
+}
+
+state_t get_next_step(const params_ml params, const state_t l_state,
+		const calc_t w_stock, const calc_t w_vola, bool do_fine) {
+	state_t n_state;
+	calc_t max_vola = MAX((calc_t) 0., l_state.vola);
+	calc_t sqrt_vola = hls::sqrtf(max_vola);
+	n_state.stock = l_state.stock + (params.double_riskless_rate - max_vola) *
+			(do_fine ? params.half_step_size_fine : params.half_step_size_coarse) +
+			(do_fine ? params.sqrt_step_size_fine : params.sqrt_step_size_coarse) *
+			sqrt_vola * w_stock;
+	n_state.vola = l_state.vola +
+			(do_fine ? params.reversion_rate_TIMES_step_size_fine :
+					params.reversion_rate_TIMES_step_size_coarse) *
+			(params.long_term_avg_vola - max_vola) +
+			(do_fine ? params.vol_of_vol_TIMES_sqrt_step_size_fine :
+					params.vol_of_vol_TIMES_sqrt_step_size_coarse) *
+			sqrt_vola * w_vola;
+	calc_t barrier_correction = sqrt_vola *
+			(do_fine ? params.barrier_correction_factor_fine :
+					params.barrier_correction_factor_coarse);
+//	#pragma HLS RESOURCE variable=barrier_correction core=FMul_meddsp
+	n_state.barrier_hit = l_state.barrier_hit |  (n_state.stock <
+			params.log_lower_barrier_value + barrier_correction) |
+			(n_state.stock > params.log_upper_barrier_value -
+			barrier_correction);
+	return n_state;
+}
+
+calc_t get_log_price(state_t state) {
+	if (state.barrier_hit)
+		return -std::numeric_limits<calc_t>::infinity();
+	else
+		return state.stock;
+}
+
+void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
+		hls::stream<calc_t> &gaussian_rn2, hls::stream<calc_t> &prices) {
+	#pragma HLS interface ap_none port=params
+	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" \
+			variable=params
 	#pragma HLS interface ap_fifo port=gaussian_rn1
 	#pragma HLS resource core=AXI4Stream variable=gaussian_rn1
 	#pragma HLS interface ap_fifo port=gaussian_rn2
 	#pragma HLS resource core=AXI4Stream variable=gaussian_rn2
 	#pragma HLS interface ap_fifo port=prices
 	#pragma HLS resource core=AXI4Stream variable=prices
-
-	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" variable=return
+	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" \
+			variable=return
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	state_t states[BLOCK_SIZE];
-	#pragma HLS data_pack variable=states
+	state_t state_coarse[BLOCK_SIZE];
+	#pragma HLS data_pack variable=state_coarse
+	state_t state_fine[BLOCK_SIZE];
+	#pragma HLS data_pack variable=state_fine
+	w_both_t w_both[BLOCK_SIZE];
+	#pragma HLS data_pack variable=w_both
 
-	for (uint32_t block = 0; block < path_cnt; block += BLOCK_SIZE) {
-		for (uint32_t step = 0; step != step_cnt; ++step) {
-			// TODO(brugger): use data type with less bits for inner counter
-			for (uint32_t i = 0; i != BLOCK_SIZE; ++i) {
-				#pragma HLS PIPELINE II=1
-
-				state_t l_state;
-				// initialize
-				if (step == 0) {
-					l_state.stock = log_spot_price;
-					l_state.vola = vola_0;
-					l_state.barrier_hit = false;
-				} else {
-					l_state = states[i];
+	for (uint32_t block = 0; block < params.path_cnt; block += BLOCK_SIZE) {
+		for (uint32_t step = 0; step != params.step_cnt;) {
+			for (ap_int<6> j = params.ml_constant;
+					j >= (params.do_multilevel ? 0 : 1); --j) {
+				bool is_fine = j != 0;
+				if (is_fine) {
+					++step;
 				}
+				for (ap_uint<10> block_i = 0; block_i != BLOCK_SIZE; ++block_i) {
+					#pragma HLS PIPELINE II=1
 
-				// calcualte next step
-				state_t n_state;
-				calc_t max_vola = MAX((calc_t) 0., l_state.vola);
-				calc_t sqrt_vola = hls::sqrtf(max_vola);
-				n_state.stock = l_state.stock + (double_riskless_rate - max_vola) *
-						half_step_size + sqrt_step_size * sqrt_vola *
-						gaussian_rn1.read();
-				n_state.vola = l_state.vola + reversion_rate_TIMES_step_size *
-						(long_term_avg_vola - max_vola) +
-						vol_of_vol_TIMES_sqrt_step_size * sqrt_vola *
-						(calc_t) gaussian_rn2.read();
-				calc_t barrier_correction = barrier_correction_factor *
-						sqrt_vola;
-				#pragma HLS RESOURCE variable=barrier_correction \
-						core=FMul_meddsp
-				n_state.barrier_hit = l_state.barrier_hit |  (n_state.stock <
-						log_lower_barrier_value + barrier_correction) |
-						(n_state.stock > log_upper_barrier_value -
-						barrier_correction);
-				states[i] = n_state;
+					//
+					// initialize
+					//
+					state_t l_state_coarse, l_state_fine;
+					w_both_t l_w_both;
+					if (step == 1) {
+						l_state_coarse = get_init_state(params);
+						l_state_fine = get_init_state(params);
+						l_w_both = get_w_zero();
+					} else {
+						l_state_coarse = state_fine[block_i];
+						l_state_fine = state_fine[block_i];
+						l_w_both = w_both[block_i];
+					}
 
-				// write out
-				if (step + 1 == step_cnt && (block + i) < path_cnt)
-					prices.write(n_state.barrier_hit ?
-							-std::numeric_limits<calc_t>::infinity() :
-							n_state.stock);
+					//
+					// calculate next step
+					//
+					state_t n_state_coarse, n_state_fine;
+					w_both_t n_w_both;
 
+					if (is_fine) {
+						// step fine
+						float w_stock = gaussian_rn1.read();
+						float w_vola = gaussian_rn2.read();
+						n_state_fine = get_next_step(params, l_state_fine,
+								w_stock, w_vola, true);
+						n_state_coarse = l_state_coarse;
+						// accumulate random numbers
+						n_w_both.w_stock = l_w_both.w_stock + w_stock;
+						n_w_both.w_vola = l_w_both.w_vola + w_vola;
+					} else {
+						// step coarse
+						n_state_coarse = get_next_step(params, l_state_coarse,
+								l_w_both.w_stock, l_w_both.w_vola, false);
+						n_state_fine = l_state_fine;
+						n_w_both = get_w_zero();
+					}
+
+					state_coarse[block_i] = n_state_coarse;
+					state_fine[block_i] = n_state_fine;
+					w_both[block_i] = n_w_both;
+
+					//
+					// write out
+					//
+					if ((step == params.step_cnt) &&
+							((block + block_i) < params.path_cnt)) {
+						if (is_fine) {
+							prices.write(get_log_price(n_state_fine));
+						} else {
+							prices.write(get_log_price(n_state_coarse));
+						}
+					}
+				}
 			}
 		}
 	}

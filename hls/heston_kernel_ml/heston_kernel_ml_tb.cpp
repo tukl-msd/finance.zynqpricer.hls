@@ -65,8 +65,10 @@ int main(int argc, char *argv[]) {
 	double ref_price = 0.74870;
 	double ref_price_precision = 0.00001;
 
+	unsigned ml_constant = 4;
+	bool do_multilevel = true;
 	unsigned step_cnt = 256; //256;
-	unsigned path_cnt = 100000; //10000;
+	unsigned path_cnt = 512; //10000;
 
 	hls::stream<calc_t> gaussian_rn1;
 	fill_gaussian_rng_stream(gaussian_rn1, step_cnt *
@@ -76,46 +78,56 @@ int main(int argc, char *argv[]) {
 			round_to_next_block(path_cnt));
 	hls::stream<calc_t> prices;
 
-	double step_size = time_to_maturity / step_cnt;
+	double step_size_fine = time_to_maturity / step_cnt;
+	double step_size_coarse = step_size_fine * ml_constant;
 
-	heston_kernel_ml(
+	params_ml params = {
 			std::log(spot_price),
-			reversion_rate * step_size,
+			reversion_rate * step_size_fine,
+			reversion_rate * step_size_coarse,
 			long_term_avg_vola,
-			vol_of_vol * std::sqrt(step_size),
+			vol_of_vol * std::sqrt(step_size_fine),
+			vol_of_vol * std::sqrt(step_size_coarse),
 			2 * riskless_rate,
 			vola_0,
-//			correlation,
-//			time_to_maturity,
+			correlation,
 			// both knockout
 			std::log(lower_barrier_value),
 			std::log(upper_barrier_value),
 			// simulation params
 			step_cnt,
-			step_size,
-			step_size / 2,
-			std::sqrt(step_size),
-			BARRIER_HIT_CORRECTION * std::sqrt(step_size),
-			path_cnt,
+			ml_constant,
+			do_multilevel,
+			//step_size,
+			step_size_fine / 2,
+			step_size_coarse / 2,
+			std::sqrt(step_size_fine),
+			std::sqrt(step_size_coarse),
+			BARRIER_HIT_CORRECTION * std::sqrt(step_size_fine),
+			BARRIER_HIT_CORRECTION * std::sqrt(step_size_coarse),
+			path_cnt};
 
-			gaussian_rn1,
-			gaussian_rn2,
-			prices);
+	heston_kernel_ml(params, gaussian_rn1, gaussian_rn2, prices);
 
-	if (prices.size() != path_cnt) {
+	if (prices.size() != path_cnt * 2) {
 		std::cerr << "Wrong number of prices returned." << std::endl;
 		return -1;
 	}
 
-	double result = 0;
+	double result_fine = 0;
+	double result_coarse = 0;
 	for (unsigned i = 0; i < path_cnt; ++i) {
-		result += std::max(0., std::exp(prices.read()) - strike_price);
+		result_fine += std::max(0., std::exp(prices.read()) - strike_price);
+		result_coarse += std::max(0., std::exp(prices.read()) - strike_price);
 	}
-	result /= path_cnt;
-	result *= std::exp(-riskless_rate * time_to_maturity);
+	result_fine /= path_cnt;
+	result_coarse /= path_cnt;
+	result_fine *= std::exp(-riskless_rate * time_to_maturity);
+	result_coarse *= std::exp(-riskless_rate * time_to_maturity);
 
-	std::cout << "Result    = " << result << std::endl;
-	std::cout << "Reference = " << ref_price << std::endl;
+	std::cout << "Result coarse = " << result_coarse << std::endl;
+	std::cout << "Result fine   = " << result_fine << std::endl;
+	std::cout << "Reference     = " << ref_price << std::endl;
 
 	return 0;
 }

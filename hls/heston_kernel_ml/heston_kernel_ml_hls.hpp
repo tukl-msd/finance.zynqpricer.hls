@@ -20,29 +20,39 @@
 
 #define calc_t float
 
-void heston_kernel_ml(
-		// call option
-		calc_t log_spot_price,
-		calc_t reversion_rate_TIMES_step_size,
-		calc_t long_term_avg_vola,
-		calc_t vol_of_vol_TIMES_sqrt_step_size,
-		calc_t double_riskless_rate, // = 2 * riskless_rate
-		calc_t vola_0,
-//		calc_t correlation,
-//		calc_t time_to_maturity,
-	    // both knockout
-		calc_t log_lower_barrier_value,
-		calc_t log_upper_barrier_value,
-		// simulation params
-		uint32_t step_cnt,
-		calc_t step_size, // = time_to_maturity / step_cnt
-		calc_t half_step_size, // = step_size / 2
-		calc_t sqrt_step_size, // = sqrt(step_size)
-		calc_t barrier_correction_factor, // = BARRIER_HIT_CORRECTION * sqrt_step_size
-		uint32_t path_cnt,
+struct params_ml {
+	calc_t log_spot_price;
+	calc_t reversion_rate_TIMES_step_size_fine;
+	calc_t reversion_rate_TIMES_step_size_coarse;
+	calc_t long_term_avg_vola;
+	calc_t vol_of_vol_TIMES_sqrt_step_size_fine;
+	calc_t vol_of_vol_TIMES_sqrt_step_size_coarse;
+	calc_t double_riskless_rate; // = 2 * riskless_rate
+	calc_t vola_0;
+	calc_t correlation;
+	// both knockout
+	calc_t log_lower_barrier_value;
+	calc_t log_upper_barrier_value;
+	// simulation params
+	uint32_t step_cnt; // assert step_cnt % ml_constant == 0
+	ap_uint<5> ml_constant;
+	bool do_multilevel;
+	// step_size = time_to_maturity / step_cnt
+	calc_t half_step_size_fine; // = step_size_fine / 2
+	calc_t half_step_size_coarse; // = step_size_coarse / 2
+	calc_t sqrt_step_size_fine; // = sqrt(step_size_fine)
+	calc_t sqrt_step_size_coarse; // = sqrt(step_size_coarse)
+	calc_t barrier_correction_factor_fine; // = BARRIER_HIT_CORRECTION * sqrt_step_size_fine
+	calc_t barrier_correction_factor_coarse; // = BARRIER_HIT_CORRECTION * sqrt_step_size_coarse
+	uint32_t path_cnt;
+};
 
-		hls::stream<calc_t> &gaussian_rn1,
-		hls::stream<calc_t> &gaussian_rn2,
-		hls::stream<calc_t> &prices);
+void heston_kernel_ml(params_ml params, hls::stream<calc_t> &gaussian_rn1,
+		hls::stream<calc_t> &gaussian_rn2, hls::stream<calc_t> &prices);
 
 #endif
+
+
+
+
+
