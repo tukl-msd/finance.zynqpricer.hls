@@ -8,11 +8,11 @@ Mersenne Twister - Random number generator
 
 *The design uses hls::stream which are buggy, see [this post][1]*
 *on the Xilinx forum for more information about this issue.*
-[1]: http://forums.xilinx.com/t5/Design-Tools-Others/HLS-Compiler-Bug-Streaming-Based-Design/td-p/349833
-
 *The issue will be fixed in the next version of Vivado HLS.*
 *Since the stream based Mersenne Twister is much easier to read*
 *it will remain here in the original form.*
+
+[1]: http://forums.xilinx.com/t5/Design-Tools-Others/HLS-Compiler-Bug-Streaming-Based-Design/td-p/349833
 
 ---
 
