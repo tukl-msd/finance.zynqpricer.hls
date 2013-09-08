@@ -24,6 +24,7 @@ struct state_t {
 // For next interface change
 //TODO(brugger): remove step_size
 //TODO(brugger): path_cnt should be uint64_t
+//TODO(brugger): add correlation
 void heston_kernel_sl(
 		// call option
 		calc_t log_spot_price,
