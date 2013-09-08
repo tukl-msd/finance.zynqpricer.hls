@@ -58,7 +58,6 @@ state_t get_next_step(const params_ml params, const state_t l_state,
 	calc_t barrier_correction = sqrt_vola *
 			(do_fine ? params.barrier_correction_factor_fine :
 					params.barrier_correction_factor_coarse);
-//	#pragma HLS RESOURCE variable=barrier_correction core=FMul_meddsp
 	n_state.barrier_hit = l_state.barrier_hit |  (n_state.stock <
 			params.log_lower_barrier_value + barrier_correction) |
 			(n_state.stock > params.log_upper_barrier_value -
@@ -87,8 +86,6 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 	#pragma HLS resource core=AXI4LiteS metadata="-bus_bundle params" \
 			variable=return
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 	// write block size to stream
 	prices.write(BLOCK_SIZE);
 
@@ -99,16 +96,16 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 	w_both_t w_both[BLOCK_SIZE];
 	#pragma HLS data_pack variable=w_both
 
-	for (uint32_t block = 0; block < params.path_cnt; block += BLOCK_SIZE) {
-		for (uint32_t step = 0; step != params.step_cnt;) {
-			for (ap_int<6> j = params.ml_constant;
-					j >= (params.do_multilevel ? 0 : 1); --j) {
-				bool is_fine = j != 0;
-				if (is_fine) {
-					++step;
-				}
-				for (ap_uint<10> block_i = 0; block_i != BLOCK_SIZE; ++block_i) {
+	ap_uint<6> upper_j = params.ml_constant + (params.do_multilevel ? 1 : 0);
+
+	for (uint32_t path = 0; path != params.path_cnt; path += BLOCK_SIZE) {
+		for (uint32_t step = 0; step != params.step_cnt_coarse; ++step) {
+			for (ap_uint<6> j = 0; j != upper_j; ++j) {
+				for (ap_uint<10> block_i = 0; block_i != BLOCK_SIZE;
+						++block_i) {
 					#pragma HLS PIPELINE II=1
+
+					bool is_fine = j != params.ml_constant;
 
 					//
 					// initialize
@@ -156,7 +153,8 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 					//
 					// write out
 					//
-					if (step == params.step_cnt) {
+					if ((step + 1 == params.step_cnt_coarse) &&
+							(j + 1 >= params.ml_constant)) {
 						if (is_fine) {
 							prices.write(get_log_price(n_state_fine));
 						} else {

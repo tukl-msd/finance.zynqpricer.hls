@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 512
 
 #define calc_t float
 
@@ -34,7 +34,7 @@ struct params_ml {
 	calc_t log_lower_barrier_value;
 	calc_t log_upper_barrier_value;
 	// simulation params
-	uint32_t step_cnt; // assert step_cnt % ml_constant == 0
+	uint32_t step_cnt_coarse; // assert step_cnt % ml_constant == 0
 	ap_uint<5> ml_constant;
 	bool do_multilevel;
 	// step_size = time_to_maturity / step_cnt

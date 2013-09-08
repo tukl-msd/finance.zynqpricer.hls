@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
 			std::log(lower_barrier_value),
 			std::log(upper_barrier_value),
 			// simulation params
-			step_cnt,
+			step_cnt / ml_constant,
 			ml_constant,
 			do_multilevel,
 			//step_size,
@@ -120,6 +120,8 @@ int main(int argc, char *argv[]) {
 
 	if (prices.size() != path_cnt * 2 + 1) {
 		std::cerr << "Wrong number of prices returned." << std::endl;
+		std::cerr << "Expected " << path_cnt * 2 + 1 <<
+				" got " << prices.size() << std::endl;
 		return -1;
 	}
 
