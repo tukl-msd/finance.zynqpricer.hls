@@ -1,7 +1,7 @@
 Box Muller Transformation
 =========================
 
-*Deprecated: Use [ICDF](../icdf) instad*
+**Deprecated:** *Use [ICDF](../icdf) instad*
 
 Transforms uniformly distributed random number into normal distributed ones.
 More information on [wikipedia](http://en.wikipedia.org/wiki/Box_muller)
