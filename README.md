@@ -47,4 +47,4 @@ See the individual folders for more information.
 Zynq Demo
 ---------
 
-The Zynq demo can be found in the [software folder](software). Additional instructions can be found [there](software).
+The Zynq demo can be found in the [software folder](software). Additional instructions can be found there.
