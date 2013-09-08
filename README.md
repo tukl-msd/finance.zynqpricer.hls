@@ -12,13 +12,13 @@ development including:
 - Full features Linux distribution (Linaro Ubuntu) running on ARM with ssh 
   access, packet manager, threading support
 - Can run almost any cross platform software package (QuantLib, scikit-learn, 
-  SystemC, Python, Boost, OpenMPI, Git, G++, etc.)
+  SystemC, Python, Boost, OpenMPI, Git, etc.)
 - Dynamic reconfiguration of the FPGA in < 200 ms from Linux command line,
   during runtime
 - Low latency (~ 100 ns) and high bandwidth (1.6 GiB/s) interconnect between 
-  FPGA and ARM.
-- C++ user space driver development possible. Fully available debugging 
-  techniques like on Desktop systems. 
+  FPGA and ARM
+- C++ user space driver development possible. Compile debug and benchmark
+  programs like on a Desktop Linux system
 - High level accelerator description possible base on the new Vivado HLS
 - Automatic AXI-Stream and memory mapped AXI interface generation
 
