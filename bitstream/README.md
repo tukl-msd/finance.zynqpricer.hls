@@ -33,6 +33,18 @@ An empty bitstream. When loaded it deletes all the configurtions from the FPGA.
 ###heston_sl_3x.bin###
 
 Contains three Heston single-level pipelines based on the Box Muller transformation. 
+Contains six Heston single-level pipelines based on the ICDF transformation. 
+```
+3x       ^ AXI Slave                                                                ^ AXI Slave             ^ AXI Slave
+         |                                                                          |                       |
++--------+---------+    +--------------------+    +-------------------+    +--------+----------+    +-------+---------+
+| Mersenne Twister |    |     Box Muller     |    |     Antithetic    |    | Heston Kernel SL  |    | AXI-Stream-Fifo |
+|------------------|    |--------------------|    |-------------------|    |-------------------|    |-----------------|
+|  Uniform random  |    |     Uniform to     |    | Generate variance +===>| Calculate single- |    |   AXI-Stream    |
+| number generator |===>| normal distributed +===>|   reducing anti-  |    |   level Heston    +===>|    to memory    |
+|  (array version) |    |   random nnmbers   |    |    thetic path    +===>| Monte Carlo paths |    |   mapped FIFO   |
++------------------+    +--------------------+    +-------------------+    +-------------------+    +-----------------+
+```
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
 ![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_3x.png)
@@ -40,6 +52,22 @@ All devices are attached to GP0 and run up to a frequency of 100 MHz.
 ###heston_sl_6x.bin###
 
 Contains six Heston single-level pipelines based on the ICDF transformation. 
+```
+6x                                                     ^ AXI Slave
+                                                       |
+     +----------------------------------------------------------------------------------------------------------+
+     |                                   -- AXI - Interconnect --                                               |
+     +----------------------------------------------------------------------------------------------------------+
+         ^ AXI Slave                                                                ^ AXI Slave             ^ AXI Slave
+         |                                                                          |                       |
++--------+---------+    +--------------------+    +-------------------+    +--------+----------+    +-------+---------+
+| Mersenne Twister |    |       ICDF         |    |     Antithetic    |    | Heston Kernel SL  |    | AXI-Stream-Fifo |
+|------------------|    |--------------------|    |-------------------|    |-------------------|    |-----------------|
+|  Uniform random  |    |     Uniform to     |    | Generate variance +===>| Calculate single- |    |   AXI-Stream    |
+| number generator |===>| normal distributed +===>|   reducing anti-  |    |   level Heston    +===>|    to memory    |
+|  (array version) |    |   random nnmbers   |    |    thetic path    +===>| Monte Carlo paths |    |   mapped FIFO   |
++------------------+    +--------------------+    +-------------------+    +-------------------+    +-----------------+
+```
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
 ![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
