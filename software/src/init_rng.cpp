@@ -55,14 +55,18 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	Json::Value bitstream = read_params(argv[1]);
-	uint32_t seed = 0;
+	uint32_t cnt = 0;
 	for (auto component: bitstream) {
-		if (component["__class__"] == "heston_sl") {
+		if (component["__class__"] == "heston_sl"
+				|| component["__class__"] == "heston_ml") {
 			initialize_mersenne_twister(
 					component["mersenne_twister"],
-					seed);
-			++seed;
+					cnt /* = seed*/);
+			++cnt;
 		}
+	}
+	if (cnt == 0) {
+		std::cout << "WARNING: no component found" << std::endl;
 	}
 }
 
