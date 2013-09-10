@@ -27,78 +27,7 @@
 #include <fstream>
 
 
-template <typename T>
-class read_iterator {
-public:
-	read_iterator(const std::vector<Json::Value> fifos, const unsigned cnt, 
-			const useconds_t sleep_usec=50) 
-		: total_read_cnt(cnt), 
-		  sleep_usec(sleep_usec),
-		  device_cnt(fifos.size())
-	{
-		if (sizeof(T) != 4) {
-			std::cerr << "ERROR: only sizeof(T) = 4 supported" 
-					<< std::endl;
-			exit(-1);
-		}
-		int i = 0;
-		for (auto fifo: fifos) {
-			devices.push_back(IODev(asHex(fifo["Offset Address"]), 
-						asHex(fifo["Range"])));
-		}
-	}
-
-	bool next(T &out) {
-		if (words_read < total_read_cnt) {
-			while (avail == 0) {
-				// go to next device
-				current_device = (current_device + 1) % device_cnt;
-				avail = get_occupancy(devices[current_device]);
-				if (avail == 0) {
-					usleep(sleep_usec);
-				}
-			}
-			--avail;
-			++words_read;
-			out = read_data(devices[current_device]);
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-private:
-	// get number of words available to read for fifo device
-	unsigned get_occupancy(IODev &dev) {
-		// Receive Data FIFO Occupancy (RDFO)
-		unsigned rdfo = *((unsigned*)dev.get_dev_ptr(0x1C));
-		return rdfo & 0x7fffffff;
-	}
-
-	// read next word from fifo device
-	// Warning: reading from a device when no data is available 
-	//          can lead to data corruption or even deadlock
-	T read_data(IODev &dev) {
-		// Receive Data FIFO Data (RDFD)
-		return *((T*)dev.get_dev_ptr(0x20));
-	}
-
-private:
-	std::vector<IODev> devices;
-	unsigned total_read_cnt;
-	unsigned device_cnt;
-	useconds_t sleep_usec;
-
-	// current device
-	unsigned current_device = 0;
-	// how many words are available for current device
-	unsigned avail = 0;
-	// number of words read
-	unsigned words_read = 0;
-};
-
-
-struct HestonParamsHW {
+struct HestonParamsHWML {
 	// call option
 	float log_spot_price;
 	float reversion_rate_TIMES_step_size_fine;
@@ -142,7 +71,7 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	float step_size_coarse = p.time_to_maturity / step_cnt_coarse;
 	float sqrt_step_size_fine = std::sqrt(step_size_fine);
 	float sqrt_step_size_coarse = std::sqrt(step_size_coarse);
-	HestonParamsHW params_hw = {
+	HestonParamsHWML params_hw = {
 		(float) std::log(p.spot_price),
 		(float) p.reversion_rate * step_size_fine,
 		(float) p.reversion_rate * step_size_coarse,
@@ -183,13 +112,14 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	}
 
 	// setup read iterator
-	read_iterator<float> read_it(fifos, path_cnt);
+	read_fifos_iterator<float> read_it(fifos, path_cnt);
 
 	// calculate result
 	double result = 0;
+	unsigned index;
 	float price;
-	while (read_it.next(price)) {
-		std::cout << price << std::endl;
+	while (read_it.next(price, index)) {
+		std::cout << index << ": " << price << std::endl;
 		//result += std::max(0.f, std::exp(price) - (float) p.strike_price);
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / path_cnt;
