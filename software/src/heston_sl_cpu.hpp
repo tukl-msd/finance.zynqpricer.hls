@@ -31,33 +31,13 @@
 #include <thread>
 #include <future>
 
+#include "heston_types.hpp"
+
 std::mt19937 get_thread_rng();
-
-
-template<typename calc_t>
-struct HestonParamsSL {
-	// call option
-	calc_t spot_price;
-	calc_t reversion_rate;
-	calc_t long_term_avg_vola;
-	calc_t vol_of_vol;
-	calc_t riskless_rate;
-	calc_t vola_0;
-	calc_t correlation;
-	calc_t time_to_maturity;
-	calc_t strike_price;
-	// both knowckout
-	calc_t lower_barrier_value;
-	calc_t upper_barrier_value;
-	// simulation params
-	uint32_t step_cnt;
-	uint32_t path_cnt;
-};
-
 
 // single threaded version
 template<typename calc_t, int BLOCK_SIZE>
-calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
+calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 	// pre-compute
 	// continuity correction, see Broadie, Glasserman, Kou (1997)
 	calc_t barrier_hit_correction = 0.5826;
@@ -72,7 +52,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	calc_t half_step_size = step_size / 2;
 	calc_t barrier_correction_factor = barrier_hit_correction * sqrt_step_size;
 	// having any struct access in our inner most loop prevents
-	// msvc to vectorize our code => 6.15s instead of 5.26s (vectorized)
+	// msvc to vectorize our code: 6.15s instead of 5.26s (vectorized)
 	calc_t long_term_avg_vola = p.long_term_avg_vola;
 	// evaluate paths
 	if (BLOCK_SIZE % 2 != 0) {
@@ -81,12 +61,12 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 	}
 	double result = 0; // final result
 	std::mt19937 rng = get_thread_rng();
-	for (unsigned path = 0; path < p.path_cnt; path += BLOCK_SIZE) {
+	for (uint64_t path = 0; path < p.path_cnt; path += BLOCK_SIZE) {
 		// initialize
 		calc_t stock[BLOCK_SIZE];
 		calc_t vola[BLOCK_SIZE];
 		bool barrier_hit[BLOCK_SIZE];
-		unsigned upper_i = std::min(p.path_cnt - path, (unsigned) BLOCK_SIZE);
+		unsigned upper_i = std::min(p.path_cnt - path, (uint64_t) BLOCK_SIZE);
 		for (unsigned i = 0; i < upper_i; ++i) {
 			stock[i] = log_spot_price;
 			vola[i] = p.vola_0;
@@ -139,7 +119,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 		// get price of option
 		for (unsigned i = 0; i < upper_i; ++i) { //upper_i
 			calc_t price = barrier_hit[i] ? 0 : std::exp(stock[i]);
-			result += std::max((calc_t)0, price - p.strike_price);
+			result += std::max((calc_t)0, price - (calc_t)p.strike_price);
 		}
 	}
 	// payoff price and return
@@ -148,28 +128,9 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL<calc_t> p) {
 }
 
 template<typename calc_t>
-calc_t heston_sl_cpu(
-		// call option
-		calc_t spot_price,
-		calc_t reversion_rate,
-		calc_t long_term_avg_vola,
-		calc_t vol_of_vol,
-		calc_t riskless_rate,
-		calc_t vola_0,
-		calc_t correlation,
-		calc_t time_to_maturity,
-		calc_t strike_price,
-		// both knowckout
-		calc_t lower_barrier_value,
-		calc_t upper_barrier_value,
-		// simulation params
-		uint32_t step_cnt,
-		uint32_t path_cnt) {
+calc_t heston_sl_cpu(HestonParamsSL p) {
 	int nt = std::thread::hardware_concurrency();
-	HestonParamsSL<calc_t> p = {spot_price,
-		reversion_rate, long_term_avg_vola, vol_of_vol, riskless_rate,
-		vola_0, correlation, time_to_maturity, strike_price, lower_barrier_value,
-		upper_barrier_value, step_cnt, path_cnt / nt};
+	p.path_cnt /= nt;
 	std::vector<std::future<calc_t> > f;
 	for (int i = 0; i < nt; ++i)
 		f.push_back(std::async(std::launch::async, 

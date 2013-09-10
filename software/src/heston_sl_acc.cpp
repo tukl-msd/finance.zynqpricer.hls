@@ -155,45 +155,28 @@ void start_heston_accelerator(
 }
 
 
-float heston_sl_hw(
-		const Json::Value bitstream,
-		// call option
-		float spot_price,
-		float reversion_rate,
-		float long_term_avg_vola,
-		float vol_of_vol,
-		float riskless_rate,
-		float vola_0,
-		float correlation,
-		float time_to_maturity,
-		float strike_price,
-		// both knowckout
-		float lower_barrier_value,
-		float upper_barrier_value,
-		// simulation params
-		uint32_t step_cnt,
-		uint32_t path_cnt)
-{
+float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
+	HestonParamsSL p = sl_params;
 	// define heston hw parameters
 	// continuity correction, see Broadie, Glasserman, Kou (1997)
 	float barrier_hit_correction = 0.5826;
-	float step_size = time_to_maturity / step_cnt;
+	float step_size = p.time_to_maturity / p.step_cnt;
 	float sqrt_step_size = std::sqrt(step_size);
 	HestonParamsHW params_hw = {
-		std::log(spot_price),
-		reversion_rate * step_size,
-		long_term_avg_vola,
-		vol_of_vol * sqrt_step_size,
-		2 * riskless_rate,
-		vola_0,
-		std::log(lower_barrier_value),
-		std::log(upper_barrier_value),
-		step_cnt,
+		(float) std::log(p.spot_price),
+		(float) (p.reversion_rate * step_size),
+		(float) (p.long_term_avg_vola),
+		(float) (p.vol_of_vol * sqrt_step_size),
+		(float) (2 * p.riskless_rate),
+		(float) p.vola_0,
+		(float) std::log(p.lower_barrier_value),
+		(float) std::log(p.upper_barrier_value),
+		p.step_cnt,
 		step_size,
 		step_size / 2,
 		sqrt_step_size,
-		barrier_hit_correction * sqrt_step_size,
-		path_cnt};
+		(float) (barrier_hit_correction * sqrt_step_size),
+		(uint32_t) p.path_cnt};
 
 	// find accelerators
 	std::vector<Json::Value> accelerators;
@@ -205,23 +188,23 @@ float heston_sl_hw(
 		}
 
 	// start accelerators
-	uint32_t acc_path_cnt = path_cnt / accelerators.size();
-	int path_cnt_remainder = path_cnt % accelerators.size();
+	uint32_t acc_path_cnt = p.path_cnt / accelerators.size();
+	int path_cnt_remainder = p.path_cnt % accelerators.size();
 	for (auto acc: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
 		start_heston_accelerator(acc, params_hw);
 	}
 
 	// setup read iterator
-	read_iterator<float> read_it(fifos, path_cnt);
+	read_iterator<float> read_it(fifos, p.path_cnt);
 
 	// calculate result
 	double result = 0;
 	float price;
 	while (read_it.next(price)) {
-		result += std::max(0.f, std::exp(price) - strike_price);
+		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
 	}
-	result *= std::exp(-riskless_rate * time_to_maturity) / path_cnt;
+	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / p.path_cnt;
 	return result;
 }
 

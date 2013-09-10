@@ -13,24 +13,7 @@
 
 #include <stdint.h>
 
-float heston_sl_hw(
-		Json::Value bitstream,
-		// call option
-		float spot_price,
-		float reversion_rate,
-		float long_term_avg_vola,
-		float vol_of_vol,
-		float riskless_rate,
-		float vola_0,
-		float correlation,
-		float time_to_maturity,
-		float strike_price,
-		// both knowckout
-		float lower_barrier_value,
-		float upper_barrier_value,
-		// simulation params
-		uint32_t step_cnt,
-		uint32_t path_cnt);
+float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params);
 
 #endif
 
