@@ -59,6 +59,10 @@ struct HestonParamsHWML {
 float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params, 
 		uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel) {
 	HestonParamsML p = ml_params;
+	if (p.ml_constant == 0) {
+		std::cerr << "ERROR: ml_constant == 0" << std::endl;
+		exit(1);
+	}
 	if (step_cnt_fine % p.ml_constant != 0) {
 		std::cerr << "ERROR: step_cnt_fine % ml_constant != 0" << std::endl;
 		exit(1);

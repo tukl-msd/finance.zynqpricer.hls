@@ -61,7 +61,7 @@ HestonParamsML get_ml_params(Json::Value json) {
 	parse_heston_params(json, params);
 	// simulation params
 	auto simulation = json["simulation_ml"];
-	params.ml_l_start = simulation["l_start"].asUInt();
+	params.ml_start_level = simulation["start_level"].asUInt();
 	params.ml_constant = simulation["ml_constant"].asUInt();
 	params.ml_path_cnt_start = simulation["path_cnt_start"].asUInt();
 	params.ml_epsilon = simulation["epsilon"].asDouble();

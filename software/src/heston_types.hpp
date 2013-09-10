@@ -33,7 +33,7 @@ struct HestonParamsSL : HestonParams {
 };
 
 struct HestonParamsML : HestonParams {
-	uint32_t ml_l_start;
+	uint32_t ml_start_level;
 	uint32_t ml_constant;
 	uint32_t ml_path_cnt_start;
 	double ml_epsilon;
