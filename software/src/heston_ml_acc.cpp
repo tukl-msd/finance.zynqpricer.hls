@@ -8,6 +8,7 @@
 
 #include "iodev.hpp"
 #include "json_helper.hpp"
+#include "heston_both_acc.hpp"
 
 #include "json/json.h"
 
@@ -126,42 +127,6 @@ struct HestonParamsHW {
 };
 
 
-void start_heston_accelerator(
-		const Json::Value heston_sl,
-		const HestonParamsHW params_hw) {
-	// get device pointers
-	IODev axi_heston(asHex(heston_sl["heston_kernel"]["Offset Address"]), 
-			asHex(heston_sl["heston_kernel"]["Range"]));
-	volatile unsigned &acc_ctrl = *((unsigned*)axi_heston.get_dev_ptr(0x00));
-
-	// make sure heston accelerator is not running
-	bool acc_idle = acc_ctrl & 0x4;
-	if (!acc_idle) {
-		std::cerr << "Heston accelerator is already running." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	// make sure random number generator is running
-	IODev axi_rng(asHex(heston_sl["mersenne_twister"]["Offset Address"]), 
-			asHex(heston_sl["mersenne_twister"]["Range"]));
-	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
-	if (rng_idle) {
-		std::cerr << "Start the Random Number generator before running"
-			<< " this application" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	
-	// send parameters to accelerator, 64 bit aligned
-	for (unsigned i = 0x14, j = 0; i <= 0xb4; i = i + 8, ++j) {
-		*((unsigned*)axi_heston.get_dev_ptr(i)) = 
-				*((unsigned*)&params_hw + j);
-	}
-
-	// start heston accelerator
-	acc_ctrl = 1;
-}
-
-
 float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params, 
 		uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel) {
 	HestonParamsML p = ml_params;
@@ -214,7 +179,7 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	int path_cnt_remainder = path_cnt % accelerators.size();
 	for (auto acc: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
-		start_heston_accelerator(acc, params_hw);
+		start_heston_accelerator(acc, &params_hw, sizeof(params_hw));
 	}
 
 	// setup read iterator

@@ -6,8 +6,8 @@
 // 27. August 2013
 //
 
-#ifndef __HESTON_SL_ACC_HPP
-#define __HESTON_SL_ACC_HPP
+#ifndef __HESTON_ML_ACC_HPP
+#define __HESTON_ML_ACC_HPP
 
 #include "json/json-forwards.h"
 

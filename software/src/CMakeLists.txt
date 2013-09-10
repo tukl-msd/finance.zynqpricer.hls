@@ -13,41 +13,35 @@ find_package (Threads)
 
 #### lib:iodev #######################################################
 set(HEADERS
-		iodev.hpp
+	iodev.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
-		iodev.cpp
+	iodev.cpp
 )
 add_library(iodev STATIC ${SOURCE} ${HEADERS})
 
 
 #### lib:heston_sl_acc ##############################################
 set(HEADERS
+		heston_types.hpp
+		heston_both_acc.hpp
 		heston_sl_acc.hpp
-)
-source_group("Header Files" FILES ${HEADERS})
-set(SOURCE
-		heston_sl_acc.cpp
-)
-add_library(heston_sl_acc ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_acc iodev)
-
-
-#### lib:heston_ml_acc ##############################################
-set(HEADERS
 		heston_ml_acc.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
+		heston_both_acc.cpp
+		heston_sl_acc.cpp
 		heston_ml_acc.cpp
 )
-add_library(heston_ml_acc ${SOURCE} ${HEADERS})
-target_link_libraries(heston_ml_acc iodev)
+add_library(heston_acc STATIC ${SOURCE} ${HEADERS})
+target_link_libraries(heston_acc iodev)
 
 
 #### lib:heston_sl_cpu ##############################################
 set(HEADERS
+		heston_types.hpp
 		heston_sl_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
 )
@@ -55,7 +49,7 @@ source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		heston_sl_cpu.cpp
 )
-add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
+add_library(heston_sl_cpu STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 
@@ -67,7 +61,7 @@ source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		json_helper.cpp
 )
-add_library(json_helper ${SOURCE} ${HEADERS})
+add_library(json_helper STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(json_helper jsoncpp)
 
 
@@ -84,7 +78,7 @@ target_link_libraries(init_rng mt19937)
 add_executable(run_heston run_heston.cpp)
 target_link_libraries(run_heston json_helper heston_sl_cpu)
 if (UNIX)
-	target_link_libraries(run_heston heston_sl_acc heston_ml_acc)
+	target_link_libraries(run_heston heston_acc)
 endif()
 
 #### exe:read_fifo ######################################################

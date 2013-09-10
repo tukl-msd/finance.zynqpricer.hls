@@ -108,13 +108,11 @@ int main(int argc, char *argv[]) {
 	}
 	if (run_acc && run_ml) {
 		std::cout << "CPU-ML: not implemented yet" << std::endl;
-		/*
 		auto start_acc = std::chrono::steady_clock::now();
 		double result_acc = heston_ml_hw(bitstream, ml_params);
 		auto end_acc = std::chrono::steady_clock::now();
 		std::cout << "ACC-ML: result = " << result_acc << std::endl;
 		std::cout << "ACC-ML: "; print_duration(start_acc, end_acc, 0);
-		*/
 	}
 #else
 	if (run_acc) {
