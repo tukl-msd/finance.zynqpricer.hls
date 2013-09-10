@@ -116,15 +116,16 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	}
 
 	// setup read iterator
-	read_fifos_iterator<float> read_it(fifos, path_cnt);
+	read_fifos_iterator<float> read_it(fifos, path_cnt + 1);
 
 	// calculate result
 	double result = 0;
 	unsigned index;
 	float price;
+	read_it.next(price, index);
 	while (read_it.next(price, index)) {
 		std::cout << index << ": " << price << std::endl;
-		//result += std::max(0.f, std::exp(price) - (float) p.strike_price);
+		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / path_cnt;
 	return result;
@@ -132,6 +133,6 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 
 
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 16, 10, false);
+	return heston_ml_hw_kernel(bitstream, ml_params, 512, 100, false);
 }
 

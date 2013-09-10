@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
 {
 	IODev axi_ctrl(AXI_FIFO_BASE_ADDR, AXI_FIFO_SIZE);
 	// Receive Data FIFO Occupancy (RDFO)
-	volatile unsigned &rdfo = *((unsigned*)axi_ctrl.get_dev_ptr(0x1C));
+	volatile unsigned &rdfo = *((volatile unsigned*)axi_ctrl.get_dev_ptr(0x1C));
 	// Receive Data FIFO Data (RDFD)
-	volatile unsigned &rdfd = *((unsigned*)axi_ctrl.get_dev_ptr(0x20));
+	volatile unsigned &rdfd = *((volatile unsigned*)axi_ctrl.get_dev_ptr(0x20));
 
 	unsigned avail = rdfo & 0x7fffffff;
 	for (unsigned i = 0; i < avail; ++i) {

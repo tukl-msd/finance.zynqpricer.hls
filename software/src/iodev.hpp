@@ -26,8 +26,9 @@ public:
 
 	~IODev();
 
-	inline void *get_dev_ptr(int addr_offset) {
-		return (void*)((char*)ptr + page_offset + addr_offset);
+	inline volatile void *get_dev_ptr(int addr_offset) {
+		return (volatile void*)((volatile char*)ptr + 
+				page_offset + addr_offset);
 	}
 
 	// define move semantic
@@ -37,7 +38,7 @@ private:
 	int fd;
 	int page_offset;
 	unsigned mem_size;
-	void *ptr;
+	volatile void *ptr;
 
 	// prevent copying
 	IODev(const IODev&) = delete;
@@ -99,7 +100,7 @@ private:
 	// get number of words available to read for fifo device
 	unsigned get_occupancy(IODev &dev) {
 		// Receive Data FIFO Occupancy (RDFO)
-		unsigned rdfo = *((unsigned*)dev.get_dev_ptr(0x1C));
+		unsigned rdfo = *((volatile unsigned*)dev.get_dev_ptr(0x1C));
 		return rdfo & 0x7fffffff;
 	}
 
@@ -108,7 +109,7 @@ private:
 	//          can lead to data corruption or even deadlock
 	T read_data(IODev &dev) {
 		// Receive Data FIFO Data (RDFD)
-		return *((T*)dev.get_dev_ptr(0x20));
+		return *((volatile T*)dev.get_dev_ptr(0x20));
 	}
 
 private:
