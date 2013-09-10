@@ -9,13 +9,13 @@ The core maps very efficiently to FPGA ressources.
 [2]: http://en.wikipedia.org/wiki/Normal_distribution
 
 ```     
-    +--------------------+    
-    |        ICDF        |    
-    |--------------------|    
-    |     Uniform to     |  AXI Stream  
-===>| normal distributed +===>
-    |   random nnmbers   |    
-    +--------------------+    
+    +-------------------+    
+    |        ICDF       |    
+    |-------------------|    
+    | Uniform to normal |  AXI Stream  
+===>|    distributed    +===>
+    |   random nnmbers  |    
+    +-------------------+    
 ```
 
 To generate and analyze the coefficients run:
