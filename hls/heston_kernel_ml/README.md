@@ -23,12 +23,12 @@ Return values
 The data returned by the kernel is structured as following:
 ```
 AXI Stream OUT: 32-bit float
-+--------+------------+--------------+-------+--------+-----------+
-| 1 word |  BS words  |  BS words    |  ...  |  ...   | ...       |
-|--------|------------|--------------|-------|--------|-----------|
-|  BS    | log price  |  log price   |  ...  |  ...   | ...       | ...
-|        | fine paths | coarse paths |  fine | coarse |           |
-+--------+------------+--------------+-------+--------+-----------+
++--------+------------+--------------+-------+--------+-----+------
+| 1 word |  BS words  |  BS words    |  ...  |  ...   | ... |      
+|--------|------------|--------------|-------|--------|-----|----- 
+|  BS    | log price  |  log price   |  ...  |  ...   | ... |       ...
+|        | fine paths | coarse paths |  fine | coarse |     |      
++--------+------------+--------------+-------+--------+-----+------
   BS = Block Size (e.g. 256)
 ```
 All data is returned as 32-bit single-precision IEEE floating point. 
