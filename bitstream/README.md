@@ -70,6 +70,30 @@ Contains six Heston single-level pipelines based on the ICDF transformation.
 ```
 All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
-![FPGA floorplan of heston_sl_3x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
+![FPGA floorplan of heston_sl_6x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_sl_6x.png)
+
+###heston_ml_5x.bin###
+
+Contains six Heston multi-level pipelines based on the ICDF transformation. 
+```
+(5x)                                                   ^ AXI Slave
+                                                       |
+     +---------------------------------------------------------------------------------------------------------+
+     |                                   -- AXI - Interconnect --                                              |
+     +---------------------------------------------------------------------------------------------------------+
+         ^ AXI Slave                                                                ^ AXI Slave            ^ AXI Slave
+         |                                                                          |                      |
++--------+---------+    +-------------------+    +-------------------+    +--------+----------+    +-------+---------+
+| Mersenne Twister |    |       ICDF        |    |     Antithetic    |    | Heston Kernel ML  |    | AXI-Stream-Fifo |
+|------------------|    |-------------------|    |-------------------|    |-------------------|    |-----------------|
+|  Uniform random  |    | Uniform to normal |    | Generate variance +===>| Calculate single- |    |   AXI-Stream    |
+| number generator |===>|    distributed    +===>|   reducing anti-  |    |   level Heston    +===>|    to memory    |
+|  (array version) |    |  random nnmbers   |    |    thetic path    +===>| Monte Carlo paths |    |   mapped FIFO   |
++------------------+    +-------------------+    +-------------------+    +-------------------+    +-----------------+
+```
+All devices are attached to GP0 and run up to a frequency of 100 MHz.
+
+![FPGA floorplan of heston_ml_5x.bin](https://git.rhrk.uni-kl.de/EIT-Wehn/finance.zynqpricer.hls/raw/master/bitstream/heston_ml_5x.png)
+
 
 
