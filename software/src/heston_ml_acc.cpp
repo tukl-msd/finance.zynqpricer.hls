@@ -25,6 +25,9 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <list>
+#include <cassert>
+#include <stdexcept>
 
 
 struct HestonParamsHWML {
@@ -56,8 +59,113 @@ struct HestonParamsHWML {
 };
 
 
-float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params, 
-		uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel) {
+class Pricer {
+public:
+	Pricer(const bool do_multilevel, const HestonParamsML params) 
+			: do_multilevel(do_multilevel), params(params) {
+	}
+
+	void handle_path(float fine_path, float coarse_path=0) {
+		price_sum += get_payoff(fine_path) - 
+				(do_multilevel ? get_payoff(coarse_path) : 0);
+		++price_cnt;
+	}
+
+	float get_mean() {
+		std::cout << price_cnt << std::endl;
+		return price_sum / price_cnt;
+	}
+private:
+	float get_payoff(float path) {
+		return std::max(0.f, std::exp(path) - (float) params.strike_price);
+	}
+
+	const bool do_multilevel;
+	const HestonParamsML params;
+
+	double price_sum = 0;
+	uint32_t price_cnt = 0;
+};
+
+
+class ResultStreamParser {
+public:
+	ResultStreamParser(const uint32_t path_cnt_requested, 
+			const bool do_multilevel, Pricer &pricer)
+			: path_cnt_requested(path_cnt_requested),
+			  do_multilevel(do_multilevel), 
+			  pricer(pricer) {
+	}
+
+	void write(float val) {
+		// first word in stream is block size (> 0)
+		if (!block_size_valid) {
+			block_size = (uint32_t) val;
+			block_size_valid = true;
+			return;
+		}
+		if (do_multilevel) {
+			if (is_curr_block_fine)
+				fine_paths.push_back(val);
+			else {
+				pricer.handle_path(fine_paths.front(), val);
+				fine_paths.pop_front();
+			}
+
+			if (++curr_block_position >= block_size) {
+				curr_block_position = 0;
+				is_curr_block_fine = !is_curr_block_fine;
+			}
+		} else {
+			pricer.handle_path(val);
+		}
+	}
+
+	/**
+	 * Returns the number of words that will be read from
+	 * the fifo
+	 *
+	 * The number of words read depends on block size and
+	 * might be bigger than the numbers returned here. Use
+	 * the is_total_read_count_final to check if the number
+	 * returned will not change. The number returned will never
+	 * be smaller than the final number.
+	 */
+	uint32_t get_total_read_count() {
+		uint32_t path_cnt;
+		if (block_size_valid)
+			path_cnt = round_to_next_block(path_cnt_requested);
+		else
+			path_cnt = path_cnt_requested;
+		return (do_multilevel ? 2 : 1) * path_cnt + 1;
+	}
+
+	bool is_total_read_count_final() {
+		return block_size_valid;
+	}
+private:
+	uint32_t round_to_next_block(uint32_t i) {
+		assert(block_size_valid);
+		return ((i + block_size - 1) / block_size) * block_size;
+	}
+
+	const uint32_t path_cnt_requested;
+	const bool do_multilevel;
+	Pricer &pricer;
+
+	uint32_t curr_block_position = 0;
+	bool is_curr_block_fine = true;
+
+	uint32_t block_size;
+	bool block_size_valid = false;
+
+	std::list<float> fine_paths;
+};
+
+
+float heston_ml_hw_kernel(const Json::Value bitstream, 
+		const HestonParamsML ml_params, const uint32_t step_cnt_fine, 
+		const uint32_t path_cnt, const bool do_multilevel) {
 	HestonParamsML p = ml_params;
 	if (p.ml_constant == 0) {
 		std::cerr << "ERROR: ml_constant == 0" << std::endl;
@@ -106,6 +214,12 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 			accelerators.push_back(component);
 			fifos.push_back(component["axi_fifo"]);
 		}
+	if (accelerators.size() == 0)
+		throw std::runtime_error("no accelerators found");
+
+	// setup pricer and parser
+	Pricer pricer(do_multilevel, p);
+	std::vector<ResultStreamParser> parsers;
 
 	// start accelerators
 	uint32_t acc_path_cnt = path_cnt / accelerators.size();
@@ -113,25 +227,39 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	for (auto acc: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
 		start_heston_accelerator(acc, &params_hw, sizeof(params_hw));
+		parsers.push_back(ResultStreamParser(params_hw.path_cnt, 
+				do_multilevel, pricer));
 	}
 
 	// setup read iterator
-	read_fifos_iterator<float> read_it(fifos, path_cnt + 1);
+	read_fifos_iterator<float> read_it(fifos);
 
 	// calculate result
-	double result = 0;
 	unsigned index;
 	float price;
-	read_it.next(price, index);
-	while (read_it.next(price, index)) {
-		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
+	bool are_sizes_known = false;
+	while (!are_sizes_known) {
+		// update fifo read count
+		are_sizes_known = true;
+		uint32_t total_size = 0;
+		for (auto parser: parsers) {
+			total_size += parser.get_total_read_count();
+			are_sizes_known &= parser.is_total_read_count_final();
+		}
+		read_it.set_new_read_cnt(total_size);
+
+		// read everything from iterator
+		while (read_it.next(price, index)) {
+			parsers[index].write(price);
+		}
 	}
-	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / path_cnt;
+	float result = pricer.get_mean();
+	result *= std::exp(-p.riskless_rate * p.time_to_maturity);
 	return result;
 }
 
 
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 4096, 100000, false);
+	return heston_ml_hw_kernel(bitstream, ml_params, 1024, 100000, false);
 }
 

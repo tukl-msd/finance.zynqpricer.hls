@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <vector>
+#include <stdexcept>
 
 
 class IODev {
@@ -52,7 +53,7 @@ template <typename T>
 class read_fifos_iterator {
 public:
 	read_fifos_iterator(const std::vector<Json::Value> fifos, 
-			const unsigned cnt, const useconds_t sleep_usec=50) 
+			const unsigned cnt=0, const useconds_t sleep_usec=50) 
 		: total_read_cnt(cnt), 
 		  sleep_usec(sleep_usec),
 		  device_cnt(fifos.size())
@@ -70,6 +71,8 @@ public:
 	}
 
 	void set_new_read_cnt(const unsigned new_cnt) {
+		if (new_cnt < words_read)
+			throw std::runtime_error("cannot read less than already read");
 		total_read_cnt = new_cnt;
 	}
 
