@@ -13,29 +13,35 @@ find_package (Threads)
 
 #### lib:iodev #######################################################
 set(HEADERS
-		iodev.hpp
+	iodev.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
-		iodev.cpp
+	iodev.cpp
 )
 add_library(iodev STATIC ${SOURCE} ${HEADERS})
 
 
 #### lib:heston_sl_acc ##############################################
 set(HEADERS
+		heston_types.hpp
+		heston_both_acc.hpp
 		heston_sl_acc.hpp
+		heston_ml_acc.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
+		heston_both_acc.cpp
 		heston_sl_acc.cpp
+		heston_ml_acc.cpp
 )
-add_library(heston_sl_acc ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_acc iodev)
+add_library(heston_acc STATIC ${SOURCE} ${HEADERS})
+target_link_libraries(heston_acc iodev)
 
 
 #### lib:heston_sl_cpu ##############################################
 set(HEADERS
+		heston_types.hpp
 		heston_sl_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
 )
@@ -43,7 +49,7 @@ source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		heston_sl_cpu.cpp
 )
-add_library(heston_sl_cpu ${SOURCE} ${HEADERS})
+add_library(heston_sl_cpu STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 
 
@@ -55,23 +61,8 @@ source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		json_helper.cpp
 )
-add_library(json_helper ${SOURCE} ${HEADERS})
+add_library(json_helper STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(json_helper jsoncpp)
-
-
-#### lib:runner ##############################################
-set(HEADERS
-		runner.hpp
-)
-source_group("Header Files" FILES ${HEADERS})
-set(SOURCE
-		runner.cpp
-)
-add_library(runner ${SOURCE} ${HEADERS})
-target_link_libraries(runner json_helper heston_sl_cpu)
-if (UNIX)
-	target_link_libraries(runner heston_sl_acc)
-endif()
 
 
 
@@ -83,17 +74,12 @@ add_executable(init_rng init_rng.cpp)
 target_link_libraries(init_rng iodev json_helper)
 target_link_libraries(init_rng mt19937)
 
-#### exe:run_cpu ######################################################
-add_executable(run_cpu run_cpu.cpp)
-target_link_libraries(run_cpu heston_sl_cpu runner)
-
-#### exe:run_acc ######################################################
-add_executable(run_acc run_acc.cpp)
-target_link_libraries(run_acc heston_sl_acc runner)
-
-#### exe:run_both ######################################################
-add_executable(run_both run_both.cpp)
-target_link_libraries(run_both heston_sl_acc heston_sl_cpu runner)
+#### exe:runner ##############################################
+add_executable(run_heston run_heston.cpp)
+target_link_libraries(run_heston json_helper heston_sl_cpu)
+if (UNIX)
+	target_link_libraries(run_heston heston_acc)
+endif()
 
 #### exe:read_fifo ######################################################
 add_executable(read_fifo read_fifo.cpp)
@@ -104,11 +90,15 @@ add_executable(read_rng read_rng.cpp)
 target_link_libraries(read_rng iodev)
 target_link_libraries(read_rng mt19937)
 
+#### exe:read_heston ######################################################
+add_executable(read_heston read_heston.cpp)
+target_link_libraries(read_heston iodev)
+
 
 
 
 ### install targets ###
 
-INSTALL(TARGETS init_rng run_cpu run_acc run_both read_fifo read_rng
+INSTALL(TARGETS init_rng run_heston read_fifo read_rng read_heston
 		RUNTIME DESTINATION bin OPTIONAL)
 

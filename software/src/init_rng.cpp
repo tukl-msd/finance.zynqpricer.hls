@@ -22,8 +22,9 @@ bool initialize_mersenne_twister(Json::Value mt, uint32_t seed){
 	unsigned range = asHex(mt["Range"]);
 	// get device pointers
 	IODev axi_rng(base, range);
-	volatile unsigned &rng_ctrl = *((unsigned*)axi_rng.get_dev_ptr(0x00));
-	bool rng_idle = *(unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
+	volatile unsigned &rng_ctrl = 
+			*((volatile unsigned*)axi_rng.get_dev_ptr(0x00));
+	bool rng_idle = *(volatile unsigned*)(axi_rng.get_dev_ptr(0x00)) & 0x4;
 
 	// exit if rng is already running
 	if (!rng_idle) {
@@ -39,7 +40,9 @@ bool initialize_mersenne_twister(Json::Value mt, uint32_t seed){
 	get_mt_state(mt_state);
 
 	// send state to hardware rng
-	memcpy(axi_rng.get_dev_ptr(0x1000), mt_state, sizeof(mt_state));
+	for (unsigned i = 0; i < 624; ++i) {
+		*((volatile uint32_t*)axi_rng.get_dev_ptr(0x1000) + i) = mt_state[i];
+	}
 	
 	// start hardware rng
 	rng_ctrl = 1;

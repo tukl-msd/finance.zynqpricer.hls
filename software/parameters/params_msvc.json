@@ -14,7 +14,7 @@
 			"lower": 90,
 			"upper": 110
 	},
-	"simulation": {
+	"simulation_sl": {
 			"step_cnt": 250,
 			"path_cnt": 1000000
 	},

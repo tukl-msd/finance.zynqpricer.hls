@@ -40,7 +40,7 @@ IODev::IODev(unsigned base_addr, unsigned size) {
 
 IODev::~IODev() {
 	if (ptr != NULL) {
-		munmap(ptr, mem_size);
+		munmap((void *) ptr, mem_size);
 	}
 }
 

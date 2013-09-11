@@ -11,10 +11,17 @@
 
 #include "json/json-forwards.h"
 
+#include "heston_types.hpp"
 
+/* general method to read json data from filename */
 Json::Value read_params(char *filename);
 
-unsigned asHex(Json::Value val);
+/* read json data and convert it to heston single-level params */
+HestonParamsSL get_sl_params(Json::Value json);
 
+/* read json data and convert it to heston multi-level params */
+HestonParamsML get_ml_params(Json::Value json);
+
+unsigned asHex(Json::Value val);
 
 #endif
