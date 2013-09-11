@@ -6,14 +6,14 @@
 // 27. August 2013
 //
 
-#ifndef __HESTON_SL_ACC_HPP
-#define __HESTON_SL_ACC_HPP
+#ifndef __HESTON_ML_ACC_HPP
+#define __HESTON_ML_ACC_HPP
 
 #include "json/json-forwards.h"
 
-#include <stdint.h>
+#include "heston_types.hpp"
 
-float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params);
+float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params);
 
 #endif
 
