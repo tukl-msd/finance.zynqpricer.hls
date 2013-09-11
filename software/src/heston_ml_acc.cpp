@@ -77,11 +77,11 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	float sqrt_step_size_coarse = std::sqrt(step_size_coarse);
 	HestonParamsHWML params_hw = {
 		(float) std::log(p.spot_price),
-		(float) p.reversion_rate * step_size_fine,
-		(float) p.reversion_rate * step_size_coarse,
+		(float) (p.reversion_rate * step_size_fine),
+		(float) (p.reversion_rate * step_size_coarse),
 		(float) p.long_term_avg_vola,
-		(float) p.vol_of_vol * sqrt_step_size_fine,
-		(float) p.vol_of_vol * sqrt_step_size_coarse,
+		(float) (p.vol_of_vol * sqrt_step_size_fine),
+		(float) (p.vol_of_vol * sqrt_step_size_coarse),
 		(float) (2 * p.riskless_rate),
 		(float) p.vola_0,
 		(float) p.correlation,
@@ -94,8 +94,8 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 		step_size_coarse / 2,
 		sqrt_step_size_fine,
 		sqrt_step_size_coarse,
-		(float) barrier_hit_correction * sqrt_step_size_fine,
-		(float) barrier_hit_correction * sqrt_step_size_coarse,
+		(float) (barrier_hit_correction * sqrt_step_size_fine),
+		(float) (barrier_hit_correction * sqrt_step_size_coarse),
 		0};
 
 	// find accelerators
@@ -124,7 +124,6 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 	float price;
 	read_it.next(price, index);
 	while (read_it.next(price, index)) {
-		std::cout << index << ": " << price << std::endl;
 		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / path_cnt;
@@ -133,6 +132,6 @@ float heston_ml_hw_kernel(Json::Value bitstream, HestonParamsML ml_params,
 
 
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 512, 100, false);
+	return heston_ml_hw_kernel(bitstream, ml_params, 4096, 100000, false);
 }
 

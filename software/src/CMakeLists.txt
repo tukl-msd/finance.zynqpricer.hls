@@ -90,11 +90,15 @@ add_executable(read_rng read_rng.cpp)
 target_link_libraries(read_rng iodev)
 target_link_libraries(read_rng mt19937)
 
+#### exe:read_heston ######################################################
+add_executable(read_heston read_heston.cpp)
+target_link_libraries(read_heston iodev)
+
 
 
 
 ### install targets ###
 
-INSTALL(TARGETS init_rng run_heston read_fifo read_rng
+INSTALL(TARGETS init_rng run_heston read_fifo read_rng read_heston
 		RUNTIME DESTINATION bin OPTIONAL)
 

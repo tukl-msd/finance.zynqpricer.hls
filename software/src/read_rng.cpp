@@ -27,9 +27,9 @@ int main(int argc, char *argv[]) {
 	// get full Mersenne Twister state
 	uint32_t mt_state[624];
 
-	// send state to hardware rng
+	// read state to hardware rng
 	for (unsigned i = 0; i < 624; ++i) {
-		*((volatile uint32_t*)axi_rng.get_dev_ptr(0x1000) + i) = mt_state[i];
+		mt_state[i] = *((volatile uint32_t*)axi_rng.get_dev_ptr(0x1000) + i);
 	}
 
 	// get expected Mersenne Twister state

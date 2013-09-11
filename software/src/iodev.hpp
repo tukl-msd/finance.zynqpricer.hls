@@ -69,6 +69,10 @@ public:
 		}
 	}
 
+	void set_new_read_cnt(const unsigned new_cnt) {
+		total_read_cnt = new_cnt;
+	}
+
 
 	bool next(T &out) {
 		unsigned fifo_index;
@@ -76,7 +80,7 @@ public:
 	}
 
 
-	bool next(T &out, unsigned fifo_index) {
+	bool next(T &out, unsigned &fifo_index) {
 		if (words_read < total_read_cnt) {
 			while (avail == 0) {
 				// go to next device
