@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 256
 
 #define calc_t float
 

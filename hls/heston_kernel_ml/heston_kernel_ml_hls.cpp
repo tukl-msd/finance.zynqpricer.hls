@@ -98,7 +98,7 @@ void heston_kernel_ml(const params_ml params, hls::stream<calc_t> &gaussian_rn1,
 
 	ap_uint<6> upper_j = params.ml_constant + (params.do_multilevel ? 1 : 0);
 
-	for (uint32_t path = 0; path != params.path_cnt; path += BLOCK_SIZE) {
+	for (uint32_t path = 0; path <= params.path_cnt; path += BLOCK_SIZE) {
 		for (uint32_t step = 0; step != params.step_cnt_coarse; ++step) {
 			for (ap_uint<6> j = 0; j != upper_j; ++j) {
 				for (ap_uint<10> block_i = 0; block_i != BLOCK_SIZE;
