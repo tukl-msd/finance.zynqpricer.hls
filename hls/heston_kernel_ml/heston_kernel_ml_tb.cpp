@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
 	double ref_price = 0.74870;
 	double ref_price_precision = 0.00001;
 
-	unsigned ml_constant = 2;
+	unsigned ml_constant = 4;
 	bool do_multilevel = true;
-	unsigned step_cnt = 2048; //256;
-	const unsigned path_cnt = 5120; //10000;
+	unsigned step_cnt = 16; // fine;
+	const unsigned path_cnt = round_to_next_block(100000); //10000;
 
 	if (step_cnt % ml_constant != 0) {
 		std::cerr << "ERROR: step_cnt % ml_constant != 0" << std::endl;
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 			reversion_rate * step_size_coarse,
 			long_term_avg_vola,
 			vol_of_vol * std::sqrt(step_size_fine),
-			vol_of_vol * std::sqrt(step_size_coarse),
+			vol_of_vol * std::sqrt(step_size_fine),
 			2 * riskless_rate,
 			vola_0,
 			correlation,
@@ -111,14 +111,14 @@ int main(int argc, char *argv[]) {
 			step_size_fine / 2,
 			step_size_coarse / 2,
 			std::sqrt(step_size_fine),
-			std::sqrt(step_size_coarse),
+			std::sqrt(step_size_fine),
 			BARRIER_HIT_CORRECTION * std::sqrt(step_size_fine),
 			BARRIER_HIT_CORRECTION * std::sqrt(step_size_coarse),
 			path_cnt};
 
 	heston_kernel_ml(params, gaussian_rn1, gaussian_rn2, prices);
 
-	if (prices.size() != path_cnt * 2 + 1) {
+	if (prices.size() != path_cnt * (do_multilevel ? 2 : 1) + 1) {
 		std::cerr << "Wrong number of prices returned." << std::endl;
 		std::cerr << "Expected " << path_cnt * 2 + 1 <<
 				" got " << prices.size() << std::endl;
@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	int block_size = prices.read();
-	float res_prices[path_cnt * 2];
-	for (unsigned i = 0; i < path_cnt * 2; ++i) {
+	float res_prices[path_cnt * (do_multilevel ? 2 : 1)];
+	for (unsigned i = 0; i < path_cnt * (do_multilevel ? 2 : 1); ++i) {
 		res_prices[i] = std::max(0., std::exp(prices.read()) - strike_price);
 	}
 
@@ -135,16 +135,21 @@ int main(int argc, char *argv[]) {
 	double result_fine = 0;
 	double result_coarse = 0;
 	for (unsigned i = 0; i < path_cnt; ++i) {
-		int block = i / block_size;
-		int block_i = i % block_size;
-		float fine = res_prices[2 * block * block_size + block_i];
-		float coarse = res_prices[(2 * block + 1) * block_size + block_i];
-		result_fine += fine;
-		result_coarse += coarse;
-		std::cout << i << " - " << fine << " - " << coarse << std::endl;
+		if (do_multilevel){
+			int block = i / block_size;
+			int block_i = i % block_size;
+			float fine = res_prices[2 * block * block_size + block_i];
+			float coarse = res_prices[(2 * block + 1) * block_size + block_i];
+			result_fine += fine;
+			result_coarse += coarse;
+			//std::cout << i << " - " << fine << " - " << coarse << std::endl;
+		} else {
+			result_fine += res_prices[i];
+		}
 	}
 	result_fine /= path_cnt;
 	result_coarse /= path_cnt;
+	std::cout << "Raw difference = " << result_fine - result_coarse << std::endl;
 	result_fine *= std::exp(-riskless_rate * time_to_maturity);
 	result_coarse *= std::exp(-riskless_rate * time_to_maturity);
 

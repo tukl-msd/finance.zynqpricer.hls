@@ -58,8 +58,8 @@ state_t get_next_step(const params_ml params, const state_t l_state,
 	calc_t barrier_correction = sqrt_vola *
 			(do_fine ? params.barrier_correction_factor_fine :
 					params.barrier_correction_factor_coarse);
-	n_state.barrier_hit = l_state.barrier_hit |  (n_state.stock <
-			params.log_lower_barrier_value + barrier_correction) |
+	n_state.barrier_hit = l_state.barrier_hit ||  (n_state.stock <
+			params.log_lower_barrier_value + barrier_correction) ||
 			(n_state.stock > params.log_upper_barrier_value -
 			barrier_correction);
 	return n_state;
