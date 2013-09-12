@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
 	double ref_price = 0.74870;
 	double ref_price_precision = 0.00001;
 
-	unsigned ml_constant = 4;
+	unsigned ml_constant = 2;
 	bool do_multilevel = true;
-	unsigned step_cnt = 256; //256;
-	const unsigned path_cnt = 512; //10000;
+	unsigned step_cnt = 2048; //256;
+	const unsigned path_cnt = 5120; //10000;
 
 	if (step_cnt % ml_constant != 0) {
 		std::cerr << "ERROR: step_cnt % ml_constant != 0" << std::endl;
@@ -137,10 +137,11 @@ int main(int argc, char *argv[]) {
 	for (unsigned i = 0; i < path_cnt; ++i) {
 		int block = i / block_size;
 		int block_i = i % block_size;
-		result_fine += res_prices[2 * block * block_size + block_i];
-		result_coarse += res_prices[(2 * block + 1) * block_size + block_i];
-		std::cout << i << " - " << res_prices[2 * block * block_size + block_i]
-		        << " - " << res_prices[(2 * block + 1) * block_size + block_i] << std::endl;
+		float fine = res_prices[2 * block * block_size + block_i];
+		float coarse = res_prices[(2 * block + 1) * block_size + block_i];
+		result_fine += fine;
+		result_coarse += coarse;
+		std::cout << i << " - " << fine << " - " << coarse << std::endl;
 	}
 	result_fine /= path_cnt;
 	result_coarse /= path_cnt;
