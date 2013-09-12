@@ -59,6 +59,10 @@ struct HestonParamsHWML {
 };
 
 
+/**
+ * Accumulates all log prices from all streams and calculates
+ * all the multi-level metrics on the fly
+ */
 class Pricer {
 public:
 	Pricer(const bool do_multilevel, const HestonParamsML params) 
@@ -66,28 +70,47 @@ public:
 	}
 
 	void handle_path(float fine_path, float coarse_path=0) {
-		price_sum += get_payoff(fine_path) - 
+		float val = get_payoff(fine_path) - 
 				(do_multilevel ? get_payoff(coarse_path) : 0);
-		++price_cnt;
+		std::cout << val << std::endl;
+		update_online_statistics(val);
 	}
 
-	float get_mean() {
+	double get_mean() {
 		std::cout << price_cnt << std::endl;
-		return price_sum / price_cnt;
+		std::cout << price_mean << std::endl;
+		std::cout << get_variance() << std::endl;
+		return price_mean;
+	}
+	double get_variance() {
+		return price_variance / (price_cnt - 1);
 	}
 private:
 	float get_payoff(float path) {
 		return std::max(0.f, std::exp(path) - (float) params.strike_price);
 	}
 
+	void update_online_statistics(float val) {
+		// See Knuth TAOCP vol 2, 3rd edition, page 232
+		++price_cnt;
+		double delta = val - price_mean;
+		price_mean += delta / price_cnt;
+		price_variance += delta * (val - price_mean);
+	};
+
 	const bool do_multilevel;
 	const HestonParamsML params;
 
-	double price_sum = 0;
+	double price_mean = 0;
+	double price_variance = 0;
 	uint32_t price_cnt = 0;
 };
 
 
+/**
+ * Parses the result stream for one multi-level pricing accelerator
+ * and passes them to the pricer
+ */
 class ResultStreamParser {
 public:
 	ResultStreamParser(const uint32_t path_cnt_requested, 
@@ -155,11 +178,10 @@ private:
 
 	uint32_t curr_block_position = 0;
 	bool is_curr_block_fine = true;
+	std::list<float> fine_paths;
 
 	uint32_t block_size;
 	bool block_size_valid = false;
-
-	std::list<float> fine_paths;
 };
 
 
@@ -237,14 +259,14 @@ float heston_ml_hw_kernel(const Json::Value bitstream,
 	// calculate result
 	unsigned index;
 	float price;
-	bool are_sizes_known = false;
-	while (!are_sizes_known) {
+	bool all_sizes_known = false;
+	while (!all_sizes_known) {
 		// update fifo read count
-		are_sizes_known = true;
+		all_sizes_known = true;
 		uint32_t total_size = 0;
 		for (auto parser: parsers) {
 			total_size += parser.get_total_read_count();
-			are_sizes_known &= parser.is_total_read_count_final();
+			all_sizes_known &= parser.is_total_read_count_final();
 		}
 		read_it.set_new_read_cnt(total_size);
 
@@ -260,6 +282,6 @@ float heston_ml_hw_kernel(const Json::Value bitstream,
 
 
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 1024, 100000, false);
+	return heston_ml_hw_kernel(bitstream, ml_params, 1024, 100000, true);
 }
 
