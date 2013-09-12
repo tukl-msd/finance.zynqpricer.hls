@@ -59,6 +59,13 @@ struct HestonParamsHWML {
 };
 
 
+struct MLStatistics {
+	double mean;
+	double variance;
+	uint32_t cnt;
+};
+
+
 /**
  * Accumulates all log prices from all streams and calculates
  * all the multi-level metrics on the fly
@@ -72,18 +79,19 @@ public:
 	void handle_path(float fine_path, float coarse_path=0) {
 		float val = get_payoff(fine_path) - 
 				(do_multilevel ? get_payoff(coarse_path) : 0);
-		std::cout << val << std::endl;
 		update_online_statistics(val);
 	}
 
-	double get_mean() {
+	MLStatistics get_statistics() {
+		MLStatistics stats = {
+			price_mean,
+			price_variance / (price_cnt - 1),
+			price_cnt
+		};
 		std::cout << price_cnt << std::endl;
 		std::cout << price_mean << std::endl;
-		std::cout << get_variance() << std::endl;
-		return price_mean;
-	}
-	double get_variance() {
-		return price_variance / (price_cnt - 1);
+		std::cout << stats.variance << std::endl;
+		return stats;
 	}
 private:
 	float get_payoff(float path) {
@@ -185,7 +193,7 @@ private:
 };
 
 
-float heston_ml_hw_kernel(const Json::Value bitstream, 
+MLStatistics heston_ml_hw_kernel(const Json::Value bitstream, 
 		const HestonParamsML ml_params, const uint32_t step_cnt_fine, 
 		const uint32_t path_cnt, const bool do_multilevel) {
 	HestonParamsML p = ml_params;
@@ -275,13 +283,14 @@ float heston_ml_hw_kernel(const Json::Value bitstream,
 			parsers[index].write(price);
 		}
 	}
-	float result = pricer.get_mean();
-	result *= std::exp(-p.riskless_rate * p.time_to_maturity);
-	return result;
+	return pricer.get_statistics();
 }
 
 
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 1024, 100000, true);
+	MLStatistics stats = heston_ml_hw_kernel(
+			bitstream, ml_params, 1024, 100000, true);
+	return stats.mean * std::exp(-ml_params.riskless_rate * 
+			ml_params.time_to_maturity);
 }
 
