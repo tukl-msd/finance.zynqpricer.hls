@@ -307,7 +307,7 @@ MLStatistics heston_ml_hw_kernel(const Json::Value bitstream,
  * time step count for specific ml_level
  */
 uint32_t get_time_step_cnt(int ml_level, HestonParamsML params) {
-	std::pow(params.ml_constant, ml_level + params.ml_start_level);
+	return std::pow(params.ml_constant, ml_level + params.ml_start_level);
 }
 
 
@@ -320,10 +320,10 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 	int current_level = 0;
 	bool first_iteration_on_level = true;
 	// Stores number of paths already generated for each level.
-	std::vector<unsigned> path_cnt_done;
+	std::vector<int64_t> path_cnt_done;
 	// Stores how many paths should be generated on each level.
 	// These values are estimated by the multi-level algorithm.
-	std::vector<unsigned> path_cnt_opt;
+	std::vector<int64_t> path_cnt_opt;
 	// Stores the statistic of each multi-level component.
 	std::vector<MLStatistics> stats;
 
@@ -334,7 +334,7 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 		}
 
 		for (int level = 0; level <= current_level; ++level) {
-			unsigned path_cnt_todo = path_cnt_opt[level] - stats[level].cnt;
+			int64_t path_cnt_todo = path_cnt_opt[level] - stats[level].cnt;
 			if (path_cnt_todo > 0) {
 				uint32_t step_cnt = get_time_step_cnt(level, ml_params);
 				bool do_multilevel = (level > 0);
@@ -347,7 +347,8 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 
 				// update variance and mean
 				stats[level] += new_stats;
-				std::cout << new_stats;
+				std::cout << new_stats << std::endl;
+				std::cout << stats[level] << std::endl;
 			}
 		}
 
