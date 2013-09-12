@@ -26,7 +26,6 @@ struct params_ml {
 	calc_t reversion_rate_TIMES_step_size_coarse;
 	calc_t long_term_avg_vola;
 	calc_t vol_of_vol_TIMES_sqrt_step_size_fine;
-	calc_t vol_of_vol_TIMES_sqrt_step_size_coarse;
 	calc_t double_riskless_rate; // = 2 * riskless_rate
 	calc_t vola_0;
 	calc_t correlation;
@@ -41,7 +40,6 @@ struct params_ml {
 	calc_t half_step_size_fine; // = step_size_fine / 2
 	calc_t half_step_size_coarse; // = step_size_coarse / 2
 	calc_t sqrt_step_size_fine; // = sqrt(step_size_fine)
-	calc_t sqrt_step_size_coarse; // = sqrt(step_size_coarse)
 	calc_t barrier_correction_factor_fine; // = BARRIER_HIT_CORRECTION * sqrt_step_size_fine
 	calc_t barrier_correction_factor_coarse; // = BARRIER_HIT_CORRECTION * sqrt_step_size_coarse
 	uint32_t path_cnt;

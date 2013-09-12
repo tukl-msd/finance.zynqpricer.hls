@@ -46,15 +46,12 @@ state_t get_next_step(const params_ml params, const state_t l_state,
 	calc_t sqrt_vola = hls::sqrtf(max_vola);
 	n_state.stock = l_state.stock + (params.double_riskless_rate - max_vola) *
 			(do_fine ? params.half_step_size_fine : params.half_step_size_coarse) +
-			(do_fine ? params.sqrt_step_size_fine : params.sqrt_step_size_coarse) *
-			sqrt_vola * w_stock;
+			params.sqrt_step_size_fine * sqrt_vola * w_stock;
 	n_state.vola = l_state.vola +
 			(do_fine ? params.reversion_rate_TIMES_step_size_fine :
 					params.reversion_rate_TIMES_step_size_coarse) *
 			(params.long_term_avg_vola - max_vola) +
-			(do_fine ? params.vol_of_vol_TIMES_sqrt_step_size_fine :
-					params.vol_of_vol_TIMES_sqrt_step_size_coarse) *
-			sqrt_vola * w_vola;
+			params.vol_of_vol_TIMES_sqrt_step_size_fine * sqrt_vola * w_vola;
 	calc_t barrier_correction = sqrt_vola *
 			(do_fine ? params.barrier_correction_factor_fine :
 					params.barrier_correction_factor_coarse);
