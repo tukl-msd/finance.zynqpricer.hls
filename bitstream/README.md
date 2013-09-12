@@ -74,7 +74,7 @@ All devices are attached to GP0 and run up to a frequency of 100 MHz.
 
 ###heston_ml_5x.bin###
 
-Contains six Heston multi-level pipelines based on the ICDF transformation. 
+Contains fife Heston multi-level pipelines based on the ICDF transformation. 
 ```
 (5x)                                                   ^ AXI Slave
                                                        |
