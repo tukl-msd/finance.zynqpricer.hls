@@ -20,9 +20,9 @@
 	},
 	"simulation_ml": {
 		"start_level": 1,
-		"ml_constant": 2,
+		"ml_constant": 4,
 		"path_cnt_start": 10000,
-		"epsilon": 0.1
+		"epsilon": 0.01
 	},
 	"reference": {
 		"price": 0.74870,
