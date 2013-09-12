@@ -235,7 +235,7 @@ MLStatistics heston_ml_hw_kernel(const Json::Value bitstream,
 		(float) (p.reversion_rate * step_size_coarse),
 		(float) p.long_term_avg_vola,
 		(float) (p.vol_of_vol * sqrt_step_size_fine),
-		(float) (p.vol_of_vol * sqrt_step_size_coarse),
+		(float) (p.vol_of_vol * sqrt_step_size_fine),
 		(float) (2 * p.riskless_rate),
 		(float) p.vola_0,
 		(float) p.correlation,
@@ -247,7 +247,7 @@ MLStatistics heston_ml_hw_kernel(const Json::Value bitstream,
 		step_size_fine / 2,
 		step_size_coarse / 2,
 		sqrt_step_size_fine,
-		sqrt_step_size_coarse,
+		sqrt_step_size_fine,
 		(float) (barrier_hit_correction * sqrt_step_size_fine),
 		(float) (barrier_hit_correction * sqrt_step_size_coarse),
 		0};
@@ -348,7 +348,6 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 				// update variance and mean
 				stats[level] += new_stats;
 				std::cout << new_stats << std::endl;
-				std::cout << stats[level] << std::endl;
 			}
 		}
 

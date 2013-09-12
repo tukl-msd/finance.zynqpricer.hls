@@ -1,6 +1,6 @@
 {
 	"heston_ml_1": {
-		"__class__": "heston_sl",
+		"__class__": "heston_ml",
 		"mersenne_twister": {
 			"Offset Address": "0x43C00000",
 			"Range": "0xFFFF"
@@ -15,7 +15,7 @@
 		}
 	},
 	"heston_ml_2": {
-		"__class__": "heston_sl",
+		"__class__": "heston_ml",
 		"mersenne_twister": {
 			"Offset Address": "0x43C60000",
 			"Range": "0xFFFF"
@@ -30,7 +30,7 @@
 		}
 	},
 	"heston_ml_3": {
-		"__class__": "heston_sl",
+		"__class__": "heston_ml",
 		"mersenne_twister": {
 			"Offset Address": "0x43C70000",
 			"Range": "0xFFFF"
@@ -45,7 +45,7 @@
 		}
 	},
 	"heston_ml_4": {
-		"__class__": "heston_sl",
+		"__class__": "heston_ml",
 		"mersenne_twister": {
 			"Offset Address": "0x43C80000",
 			"Range": "0xFFFF"
@@ -60,7 +60,7 @@
 		}
 	},
 	"heston_ml_5": {
-		"__class__": "heston_sl",
+		"__class__": "heston_ml",
 		"mersenne_twister": {
 			"Offset Address": "0x43C90000",
 			"Range": "0xFFFF"
