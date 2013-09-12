@@ -59,6 +59,37 @@ struct HestonParamsHWML {
 };
 
 
+struct MLStatistics {
+	double mean = 0;
+	double variance = 0;
+	uint32_t cnt = 0;
+
+	MLStatistics& operator+=(const MLStatistics &rhs) {
+		uint32_t new_cnt = cnt + rhs.cnt;
+		double new_mean = (cnt * mean + rhs.mean * rhs.cnt) / new_cnt;
+		variance = ((cnt - 1) * variance + 
+				rhs.variance * (rhs.cnt - 1) + 
+				cnt * rhs.cnt / new_cnt *
+				std::pow(mean - rhs.mean, 2)) / (new_cnt - 1);
+		mean = new_mean;
+		cnt = new_cnt;
+		return *this;
+	}
+};
+inline MLStatistics operator+(MLStatistics lhs, const MLStatistics &rhs) {
+	lhs += rhs;
+	return lhs;
+}
+std::ostream& operator<<(std::ostream& o, const MLStatistics &s) {
+	return o << "{mean: " << s.mean << ", variance: " <<
+			s.variance << ", cnt: " << s.cnt << "}";
+}
+
+
+/**
+ * Accumulates all log prices from all streams and calculates
+ * all the multi-level metrics on the fly
+ */
 class Pricer {
 public:
 	Pricer(const bool do_multilevel, const HestonParamsML params) 
@@ -66,28 +97,44 @@ public:
 	}
 
 	void handle_path(float fine_path, float coarse_path=0) {
-		price_sum += get_payoff(fine_path) - 
+		float val = get_payoff(fine_path) - 
 				(do_multilevel ? get_payoff(coarse_path) : 0);
-		++price_cnt;
+		update_online_statistics(val);
 	}
 
-	float get_mean() {
-		std::cout << price_cnt << std::endl;
-		return price_sum / price_cnt;
+	MLStatistics get_statistics() {
+		MLStatistics stats;
+		stats.mean = price_mean;
+		stats.variance =price_variance / (price_cnt - 1);
+		stats.cnt = price_cnt;
+		return stats;
 	}
 private:
 	float get_payoff(float path) {
 		return std::max(0.f, std::exp(path) - (float) params.strike_price);
 	}
 
+	void update_online_statistics(float val) {
+		// See Knuth TAOCP vol 2, 3rd edition, page 232
+		++price_cnt;
+		double delta = val - price_mean;
+		price_mean += delta / price_cnt;
+		price_variance += delta * (val - price_mean);
+	};
+
 	const bool do_multilevel;
 	const HestonParamsML params;
 
-	double price_sum = 0;
+	double price_mean = 0;
+	double price_variance = 0;
 	uint32_t price_cnt = 0;
 };
 
 
+/**
+ * Parses the result stream for one multi-level pricing accelerator
+ * and passes them to the pricer
+ */
 class ResultStreamParser {
 public:
 	ResultStreamParser(const uint32_t path_cnt_requested, 
@@ -155,15 +202,14 @@ private:
 
 	uint32_t curr_block_position = 0;
 	bool is_curr_block_fine = true;
+	std::list<float> fine_paths;
 
 	uint32_t block_size;
 	bool block_size_valid = false;
-
-	std::list<float> fine_paths;
 };
 
 
-float heston_ml_hw_kernel(const Json::Value bitstream, 
+MLStatistics heston_ml_hw_kernel(const Json::Value bitstream, 
 		const HestonParamsML ml_params, const uint32_t step_cnt_fine, 
 		const uint32_t path_cnt, const bool do_multilevel) {
 	HestonParamsML p = ml_params;
@@ -237,14 +283,14 @@ float heston_ml_hw_kernel(const Json::Value bitstream,
 	// calculate result
 	unsigned index;
 	float price;
-	bool are_sizes_known = false;
-	while (!are_sizes_known) {
+	bool all_sizes_known = false;
+	while (!all_sizes_known) {
 		// update fifo read count
-		are_sizes_known = true;
+		all_sizes_known = true;
 		uint32_t total_size = 0;
 		for (auto parser: parsers) {
 			total_size += parser.get_total_read_count();
-			are_sizes_known &= parser.is_total_read_count_final();
+			all_sizes_known &= parser.is_total_read_count_final();
 		}
 		read_it.set_new_read_cnt(total_size);
 
@@ -253,13 +299,85 @@ float heston_ml_hw_kernel(const Json::Value bitstream,
 			parsers[index].write(price);
 		}
 	}
-	float result = pricer.get_mean();
-	result *= std::exp(-p.riskless_rate * p.time_to_maturity);
-	return result;
+	return pricer.get_statistics();
 }
 
 
+/**
+ * time step count for specific ml_level
+ */
+uint32_t get_time_step_cnt(int ml_level, HestonParamsML params) {
+	std::pow(params.ml_constant, ml_level + params.ml_start_level);
+}
+
+
+/**
+ * multilevel control, 
+ * decides how many paths should be evaluated on which level and 
+ * accumulates the results
+ */
 float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
-	return heston_ml_hw_kernel(bitstream, ml_params, 1024, 100000, false);
+	int current_level = 0;
+	bool first_iteration_on_level = true;
+	// Stores number of paths already generated for each level.
+	std::vector<unsigned> path_cnt_done;
+	// Stores how many paths should be generated on each level.
+	// These values are estimated by the multi-level algorithm.
+	std::vector<unsigned> path_cnt_opt;
+	// Stores the statistic of each multi-level component.
+	std::vector<MLStatistics> stats;
+
+	while (true) {
+		if (first_iteration_on_level) {
+			path_cnt_opt.push_back(ml_params.ml_path_cnt_start);
+			stats.push_back(MLStatistics());
+		}
+
+		for (int level = 0; level <= current_level; ++level) {
+			unsigned path_cnt_todo = path_cnt_opt[level] - stats[level].cnt;
+			if (path_cnt_todo > 0) {
+				uint32_t step_cnt = get_time_step_cnt(level, ml_params);
+				bool do_multilevel = (level > 0);
+				std::cout << "current_level " << current_level <<
+						" level " << level << " step_cnt " << 
+						step_cnt << " path_cnt " << 
+						path_cnt_todo << std::endl;
+				MLStatistics new_stats = heston_ml_hw_kernel(bitstream, 
+						ml_params, step_cnt, path_cnt_todo, do_multilevel);
+
+				// update variance and mean
+				stats[level] += new_stats;
+				std::cout << new_stats;
+			}
+		}
+
+		if (first_iteration_on_level) {
+			first_iteration_on_level = false;
+			for (int level = 0; level <= current_level; ++level) {
+				double sum = 0;
+				for (int l = 0; l <= level; ++l)
+					sum += sqrt(stats[l].variance / (ml_params.time_to_maturity /
+							get_time_step_cnt(l, ml_params)));
+				path_cnt_opt[level] = std::ceil(2 * 
+						std::pow(ml_params.ml_epsilon, -2) * sum * 
+						sqrt(stats[level].variance * ml_params.time_to_maturity /
+						get_time_step_cnt(level, ml_params)));
+			}
+		} else {
+			if ((current_level > 2) && (std::max(1. / ml_params.ml_constant * 
+					abs(stats[current_level - 1].mean), 
+					stats[current_level].mean) < ml_params.ml_epsilon / 
+					std::sqrt(2) * (ml_params.ml_constant - 1)))
+				break;
+			current_level += 1;
+			first_iteration_on_level = true;
+		}
+	}
+
+	double sum = 0;
+	for (auto s: stats)
+		sum += s.mean;
+	return sum * exp(-ml_params.riskless_rate * ml_params.time_to_maturity);
 }
+
 
