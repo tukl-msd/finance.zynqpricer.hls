@@ -14,7 +14,7 @@ mkdir build
 
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=.. ..
-make init_rng run_heston
+make -j 2 init_rng run_heston
 make install
 #ctest --output-on-failure .
 
