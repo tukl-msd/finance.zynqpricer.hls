@@ -311,12 +311,64 @@ uint32_t get_time_step_cnt(int ml_level, HestonParamsML params) {
 }
 
 
+void print_performance(std::vector<MLStatistics> stats, 
+		HestonParamsML params,
+		std::vector<double> durations,
+		std::chrono::steady_clock::time_point start, 
+		std::chrono::steady_clock::time_point end) {
+	double duration = std::chrono::duration<double>(
+			end - start).count();
+	// print overhead
+	double level_duration_sum = 0;
+	for (int level = 0; level < stats.size(); ++level) {
+		level_duration_sum += durations[level];
+	}
+	std::cout << "Control overhead are " << duration - level_duration_sum 
+			<< "seconds" << std::endl;
+	std::cout << std::endl;
+	// print steps / sec
+	uint64_t steps = 0;
+	for (int level = 0; level < stats.size(); ++level) {
+		uint64_t l_steps = (uint64_t) stats[level].cnt * 
+				get_time_step_cnt(level, params) *
+				(level == 0 ? 1 : (1 + 1. / params.ml_constant));
+		std::cout << "Level " << level << " calculated " << l_steps 
+				<< " steps in " << durations[level] << " seconds (" << 
+				l_steps / durations[level] << " steps / sec)"
+				<< std::endl;
+		steps += l_steps;
+	}
+	std::cout << "Calculated " << steps << " steps in " << duration
+			<< " seconds (" << steps / duration << " steps / sec)"
+			<< std::endl;
+	std::cout << std::endl;
+	// print bytes / sec
+	uint64_t bytes = 0;
+	for (int level = 0; level < stats.size(); ++level) {
+		uint64_t l_bytes = 4 * ((uint64_t) stats[level].cnt *
+				(level == 0 ? 1 : 2) + 1);
+		std::cout << "Level " << level << " transmitted " << l_bytes 
+				<< " bytes in " << durations[level] << " seconds (" << 
+				l_bytes / durations[level] << " bytes / sec)"
+				<< std::endl;
+		bytes += l_bytes;
+	}
+	std::cout << "Calculated " << bytes << " bytes in " << duration
+			<< " seconds (" << bytes / duration << " bytes / sec)"
+			<< std::endl;
+	std::cout << std::endl;
+}
+
+
 /**
  * multilevel control, 
  * decides how many paths should be evaluated on which level and 
  * accumulates the results
  */
-float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
+float heston_ml_hw(const Json::Value &bitstream, 
+		const HestonParamsML &ml_params) {
+	auto start_f = std::chrono::steady_clock::now();
+
 	int current_level = 0;
 	bool first_iteration_on_level = true;
 	// Stores number of paths already generated for each level.
@@ -326,11 +378,14 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 	std::vector<int64_t> path_cnt_opt;
 	// Stores the statistic of each multi-level component.
 	std::vector<MLStatistics> stats;
+	// stores timing information
+	std::vector<double> durations;
 
 	while (true) {
 		if (first_iteration_on_level) {
 			path_cnt_opt.push_back(ml_params.ml_path_cnt_start);
 			stats.push_back(MLStatistics());
+			durations.push_back(0);
 		}
 
 		for (int level = 0; level <= current_level; ++level) {
@@ -342,8 +397,12 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 						" level " << level << " step_cnt " << 
 						step_cnt << " path_cnt " << 
 						path_cnt_todo << std::endl;
+				auto start = std::chrono::steady_clock::now();
 				MLStatistics new_stats = heston_ml_hw_kernel(bitstream, 
 						ml_params, step_cnt, path_cnt_todo, do_multilevel);
+				auto end = std::chrono::steady_clock::now();
+				durations[level] += std::chrono::duration<double>(
+						end - start).count();
 
 				// update variance and mean
 				stats[level] += new_stats;
@@ -377,7 +436,11 @@ float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params) {
 	double sum = 0;
 	for (auto s: stats)
 		sum += s.mean;
-	return sum * exp(-ml_params.riskless_rate * ml_params.time_to_maturity);
+	double r = sum * exp(-ml_params.riskless_rate * ml_params.time_to_maturity);
+
+	auto end_f = std::chrono::steady_clock::now();
+	print_performance(stats, ml_params, durations, start_f, end_f);
+	return r;
 }
 
 

@@ -13,7 +13,8 @@
 
 #include "heston_types.hpp"
 
-float heston_ml_hw(Json::Value bitstream, HestonParamsML ml_params);
+float heston_ml_hw(const Json::Value &bitstream, 
+		const HestonParamsML &ml_params);
 
 #endif
 
