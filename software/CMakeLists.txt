@@ -25,6 +25,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "armv7l")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
 		add_definitions(-DWITH_ACC)
+		set(WITH_ACC true)
 	endif()
 endif()
 
