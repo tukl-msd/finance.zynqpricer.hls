@@ -24,6 +24,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	# set flags for Zynq
 	if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "armv7l")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+		add_definitions(-DWITH_ACC)
 	endif()
 endif()
 
@@ -33,6 +34,18 @@ if(MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
 	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /LTCG")
 endif()
+
+# intel compiler flags
+set(MANTA_COMPILER_NAME_REGEXPR "icpc.*$")
+if(NOT CMAKE_COMPILER_IS_GNUCXX)
+	if(CMAKE_CXX_COMPILER MATCHES ${MANTA_COMPILER_NAME_REGEXPR})
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -xHOST")
+		add_definitions(-DWITH_MPI)
+	endif()
+endif()
+
+
 
 # enable_testing()
 add_subdirectory(src)

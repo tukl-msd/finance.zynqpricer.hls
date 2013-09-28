@@ -129,16 +129,21 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 
 template<typename calc_t>
 calc_t heston_sl_cpu(HestonParamsSL p) {
+#ifndef WITH_MPI
 	int nt = std::thread::hardware_concurrency();
 	p.path_cnt /= nt;
 	std::vector<std::future<calc_t> > f;
-	for (int i = 0; i < nt; ++i)
+	for (int i = 0; i < nt; ++i) {
 		f.push_back(std::async(std::launch::async, 
 					heston_sl_cpu_kernel<calc_t, 64>, p));
+	}
 	calc_t sum = 0;
 	for (int i = 0; i < nt; ++i)
 		sum += f[i].get();
 	return (calc_t)(sum / nt);
+#else
+	return heston_sl_cpu_kernel<calc_t, 64>(p);
+#endif
 }
 
 #endif

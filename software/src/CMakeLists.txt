@@ -74,10 +74,10 @@ add_executable(init_rng init_rng.cpp)
 target_link_libraries(init_rng iodev json_helper)
 target_link_libraries(init_rng mt19937)
 
-#### exe:runner ##############################################
+#### exe:run_heston ##############################################
 add_executable(run_heston run_heston.cpp)
 target_link_libraries(run_heston json_helper heston_sl_cpu)
-if (UNIX)
+if (WITH_ACC)
 	target_link_libraries(run_heston heston_acc)
 endif()
 
@@ -93,7 +93,6 @@ target_link_libraries(read_rng mt19937)
 #### exe:read_heston ######################################################
 add_executable(read_heston read_heston.cpp)
 target_link_libraries(read_heston iodev)
-
 
 
 

@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
 	// benchmark
 	uint64_t steps = sl_params.step_cnt * sl_params.path_cnt;
-#ifdef __unix__
+#ifdef WITH_ACC
 	if (run_acc && run_sl) {
 		auto start_acc = std::chrono::steady_clock::now();
 		double result_acc = heston_sl_hw(bitstream, sl_params);
