@@ -11,7 +11,7 @@ project(finance.zynqpricer.hls)
 
 include(buildsys/shared.cmake)
 
-#SET(CMAKE_VERBOSE_MAKEFILE ON)
+SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 # only install targets that have been build
 SET(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
@@ -43,6 +43,7 @@ if(NOT CMAKE_COMPILER_IS_GNUCXX)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -xHOST")
 		add_definitions(-DWITH_MPI)
+		set(WITH_MPI true)
 	endif()
 endif()
 

@@ -20,6 +20,10 @@
 #ifndef __HESTON_SL_CPU_HPP__
 #define __HESTON_SL_CPU_HPP__
 
+#ifdef WITH_MPI
+	#include "mpi.h"
+#endif
+
 #include "ziggurat/gausszig_GSL.hpp"
 
 #include <stdint.h>
@@ -142,7 +146,15 @@ calc_t heston_sl_cpu(HestonParamsSL p) {
 		sum += f[i].get();
 	return (calc_t)(sum / nt);
 #else
-	return heston_sl_cpu_kernel<calc_t, 64>(p);
+	int rank, size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	p.path_cnt /= size;
+	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p);
+	double result = 0;
+	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
+			0, MPI_COMM_WORLD);
+	return (calc_t)(result / size);
 #endif
 }
 

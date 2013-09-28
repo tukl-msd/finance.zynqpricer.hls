@@ -9,7 +9,12 @@
 include_directories(.)
 include_directories(../externals)
 
-find_package (Threads)
+find_package(Threads)
+
+if (WITH_MPI)
+	find_package(MPI)
+	include_directories(${MPI_INCLUDE_PATH})
+endif()
 
 #### lib:iodev #######################################################
 set(HEADERS
@@ -51,6 +56,9 @@ set(SOURCE
 )
 add_library(heston_sl_cpu STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
+if (WITH_MPI)
+	target_link_libraries(heston_sl_cpu ${MPI_LIBRARIES})
+endif()
 
 
 #### lib:json_helper ##############################################
@@ -79,6 +87,9 @@ add_executable(run_heston run_heston.cpp)
 target_link_libraries(run_heston json_helper heston_sl_cpu)
 if (WITH_ACC)
 	target_link_libraries(run_heston heston_acc)
+endif()
+if (WITH_MPI)
+	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
 
 #### exe:read_fifo ######################################################

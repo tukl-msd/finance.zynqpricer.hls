@@ -6,10 +6,14 @@
 // 27. August 2013
 //
 
+#ifdef WITH_MPI
+	#include "mpi.h"
+#endif
+
 #include "heston_sl_cpu.hpp"
-#ifdef __unix__
-#include "heston_sl_acc.hpp"
-#include "heston_ml_acc.hpp"
+#ifdef WITH_ACC
+	#include "heston_sl_acc.hpp"
+	#include "heston_ml_acc.hpp"
 #endif
 #include "json_helper.hpp"
 
@@ -35,6 +39,9 @@ void print_usage_and_exit(char *argv0) {
 			"params.json" << " [bitstream.json]" << std::endl;
 	std::cerr << "    -<algorithm>   : sl, ml or both" << std::endl;
 	std::cerr << "    -<architecture>: cpu, acc or both" << std::endl;
+#ifdef WITH_MPI
+	MPI_Finalize();
+#endif
 	exit(1);
 }
 
@@ -78,6 +85,12 @@ void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml,
 
 
 int main(int argc, char *argv[]) {
+#ifdef WITH_MPI
+	MPI_Init(&argc, &argv);
+	int rank, size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
 	bool run_sl, run_ml, run_acc, run_cpu;
 	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu);
 	// read json files
@@ -93,10 +106,13 @@ int main(int argc, char *argv[]) {
 	auto ref = json["reference"];
 	double ref_price = ref["price"].asDouble();
 	double ref_price_precision = ref["precision"].asDouble();
-	std::cout << "REF   : result = " << ref_price << std::endl;
 
 
+#ifdef WITH_MPI
+	if (rank == 0) {
+#endif
 	// benchmark
+	std::cout << "REF   : result = " << ref_price << std::endl;
 	uint64_t steps = sl_params.step_cnt * sl_params.path_cnt;
 #ifdef WITH_ACC
 	if (run_acc && run_sl) {
@@ -131,6 +147,14 @@ int main(int argc, char *argv[]) {
 		std::cout << "CPU-ML: not implemented yet" << std::endl;
 	}
 
+#ifdef WITH_MPI
+	} else {
+		if (run_cpu && run_sl) {
+			heston_sl_cpu<float>(sl_params);
+		}
+	}
+	MPI_Finalize();
+#endif
 	return 0;
 }
 
