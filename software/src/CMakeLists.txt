@@ -27,9 +27,19 @@ set(SOURCE
 add_library(iodev STATIC ${SOURCE} ${HEADERS})
 
 
-#### lib:heston_sl_acc ##############################################
+#### lib:heston_common ##############################################
 set(HEADERS
-		heston_types.hpp
+		heston_common.hpp
+)
+source_group("Header Files" FILES ${HEADERS})
+set(SOURCE
+		heston_common.cpp
+)
+add_library(heston_common STATIC ${SOURCE} ${HEADERS})
+
+
+#### lib:heston_acc ##############################################
+set(HEADERS
 		heston_both_acc.hpp
 		heston_sl_acc.hpp
 		heston_ml_acc.hpp
@@ -42,11 +52,11 @@ set(SOURCE
 )
 add_library(heston_acc STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(heston_acc iodev)
+target_link_libraries(heston_acc heston_common)
 
 
 #### lib:heston_sl_cpu ##############################################
 set(HEADERS
-		heston_types.hpp
 		heston_sl_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
 )
@@ -59,6 +69,7 @@ target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
 if (WITH_MPI)
 	target_link_libraries(heston_sl_cpu ${MPI_LIBRARIES})
 endif()
+target_link_libraries(heston_sl_cpu heston_common)
 
 
 #### lib:json_helper ##############################################
@@ -71,6 +82,7 @@ set(SOURCE
 )
 add_library(json_helper STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(json_helper jsoncpp)
+target_link_libraries(json_helper heston_common)
 
 
 

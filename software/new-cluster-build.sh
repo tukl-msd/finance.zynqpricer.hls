@@ -11,8 +11,10 @@ set -e
 
 module unload gcc
 module unload intel
+module unload openmpi
 module load gcc/4.7.2
-module load intel/13.0.1
+module load intel/2013.0.028
+module load openmpi/1.7.2-intel-2013.0.028
 
 rm -rf build
 mkdir build

@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef WITH_MPI
 	if (rank == 0) {
+		std::cout << "size = " << size << std::endl;
 #endif
 	// benchmark
 	std::cout << "REF   : result = " << ref_price << std::endl;

@@ -11,7 +11,7 @@ project(finance.zynqpricer.hls)
 
 include(buildsys/shared.cmake)
 
-SET(CMAKE_VERBOSE_MAKEFILE ON)
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 # only install targets that have been build
 SET(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)

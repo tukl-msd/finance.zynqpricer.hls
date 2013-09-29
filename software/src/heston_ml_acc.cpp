@@ -59,33 +59,6 @@ struct HestonParamsHWML {
 };
 
 
-struct MLStatistics {
-	double mean = 0;
-	double variance = 0;
-	uint32_t cnt = 0;
-
-	MLStatistics& operator+=(const MLStatistics &rhs) {
-		uint32_t new_cnt = cnt + rhs.cnt;
-		double new_mean = (cnt * mean + rhs.mean * rhs.cnt) / new_cnt;
-		variance = ((cnt - 1) * variance + 
-				rhs.variance * (rhs.cnt - 1) + 
-				cnt * rhs.cnt / new_cnt *
-				std::pow(mean - rhs.mean, 2)) / (new_cnt - 1);
-		mean = new_mean;
-		cnt = new_cnt;
-		return *this;
-	}
-};
-inline MLStatistics operator+(MLStatistics lhs, const MLStatistics &rhs) {
-	lhs += rhs;
-	return lhs;
-}
-std::ostream& operator<<(std::ostream& o, const MLStatistics &s) {
-	return o << "{mean: " << s.mean << ", variance: " <<
-			s.variance << ", cnt: " << s.cnt << "}";
-}
-
-
 /**
  * Accumulates all log prices from all streams and calculates
  * all the multi-level metrics on the fly
@@ -102,8 +75,8 @@ public:
 		update_online_statistics(val);
 	}
 
-	MLStatistics get_statistics() {
-		MLStatistics stats;
+	Statistics get_statistics() {
+		Statistics stats;
 		stats.mean = price_mean;
 		stats.variance =price_variance / (price_cnt - 1);
 		stats.cnt = price_cnt;
@@ -209,7 +182,7 @@ private:
 };
 
 
-MLStatistics heston_ml_hw_kernel(const Json::Value bitstream, 
+Statistics heston_ml_hw_kernel(const Json::Value bitstream, 
 		const HestonParamsML ml_params, const uint32_t step_cnt_fine, 
 		const uint32_t path_cnt, const bool do_multilevel) {
 	HestonParamsML p = ml_params;
@@ -311,7 +284,7 @@ uint32_t get_time_step_cnt(int ml_level, HestonParamsML params) {
 }
 
 
-void print_performance(std::vector<MLStatistics> stats, 
+void print_performance(std::vector<Statistics> stats, 
 		HestonParamsML params,
 		std::vector<double> durations,
 		std::chrono::steady_clock::time_point start, 
@@ -377,14 +350,14 @@ float heston_ml_hw(const Json::Value &bitstream,
 	// These values are estimated by the multi-level algorithm.
 	std::vector<int64_t> path_cnt_opt;
 	// Stores the statistic of each multi-level component.
-	std::vector<MLStatistics> stats;
+	std::vector<Statistics> stats;
 	// stores timing information
 	std::vector<double> durations;
 
 	while (true) {
 		if (first_iteration_on_level) {
 			path_cnt_opt.push_back(ml_params.ml_path_cnt_start);
-			stats.push_back(MLStatistics());
+			stats.push_back(Statistics());
 			durations.push_back(0);
 		}
 
@@ -398,7 +371,7 @@ float heston_ml_hw(const Json::Value &bitstream,
 						step_cnt << " path_cnt " << 
 						path_cnt_todo << std::endl;
 				auto start = std::chrono::steady_clock::now();
-				MLStatistics new_stats = heston_ml_hw_kernel(bitstream, 
+				Statistics new_stats = heston_ml_hw_kernel(bitstream, 
 						ml_params, step_cnt, path_cnt_todo, do_multilevel);
 				auto end = std::chrono::steady_clock::now();
 				durations[level] += std::chrono::duration<double>(

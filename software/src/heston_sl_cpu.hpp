@@ -35,13 +35,13 @@
 #include <thread>
 #include <future>
 
-#include "heston_types.hpp"
+#include "heston_common.hpp"
 
 std::mt19937 *get_rng();
 
 // single threaded version
 template<typename calc_t, int BLOCK_SIZE>
-calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
+calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 	if (p.path_cnt == 0)
 		return 0;
 	// pre-compute
@@ -66,6 +66,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 		exit(-1);
 	}
 	double result = 0; // final result
+	double result_squared = 0;
 	std::mt19937 *rng = get_rng();
 	for (uint64_t path = 0; path < p.path_cnt; path += BLOCK_SIZE) {
 		// initialize
@@ -123,14 +124,26 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p) {
 				barrier_hit[i] |= (stock[i] < lower[i]) | (stock[i] > upper[i]);
 		}
 		// get price of option
-		for (unsigned i = 0; i < upper_i; ++i) { //upper_i
-			calc_t price = barrier_hit[i] ? 0 : std::exp(stock[i]);
-			result += std::max((calc_t)0, price - (calc_t)p.strike_price);
+		for (unsigned i = 0; i < upper_i; ++i) {
+			calc_t spot = barrier_hit[i] ? 0 : std::exp(stock[i]);
+			calc_t price = std::max((calc_t)0, spot - (calc_t)p.strike_price);
+			result += price;
+			if (stats != nullptr)
+				result_squared += price * price;
 		}
 	}
-	// payoff price and return
-	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / p.path_cnt;
-	return (calc_t)result;
+	// payoff price and statistics
+	double discount_factor = std::exp(-p.riskless_rate * p.time_to_maturity);
+	result *= discount_factor;
+	double mean = result / p.path_cnt;
+	if (stats != nullptr) {
+		stats->mean = mean;
+		result_squared *= discount_factor * discount_factor;
+		stats->variance = (result_squared - result * result / p.path_cnt) / 
+				(p.path_cnt - 1);
+		stats->cnt = p.path_cnt;
+	}
+	return (calc_t)mean;
 }
 
 template<typename calc_t>
@@ -141,7 +154,7 @@ calc_t heston_sl_cpu(HestonParamsSL p) {
 	std::vector<std::future<calc_t> > f;
 	for (int i = 0; i < nt; ++i) {
 		f.push_back(std::async(std::launch::async, 
-					heston_sl_cpu_kernel<calc_t, 64>, p));
+					heston_sl_cpu_kernel<calc_t, 64>, p, nullptr));
 	}
 	calc_t sum = 0;
 	for (int i = 0; i < nt; ++i)
@@ -153,10 +166,25 @@ calc_t heston_sl_cpu(HestonParamsSL p) {
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	uint64_t total_path_cnt = p.path_cnt;
 	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
-	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p) * p.path_cnt;
+	Statistics local_stats;
+	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p, &local_stats) * 
+			p.path_cnt;
 	double result = 0;
 	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
 			0, MPI_COMM_WORLD);
+
+	// combine statistics
+	Statistics stats_vec[size];
+	MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+			&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
+	if (rank == 0) {
+		Statistics stats;
+		for (int i = 0; i < size; ++i) {
+			stats += stats_vec[i];
+		}
+		std::cout << stats << std::endl;
+	}
+
 	return (calc_t)(result / total_path_cnt);
 #endif
 }

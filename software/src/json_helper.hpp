@@ -11,7 +11,7 @@
 
 #include "json/json-forwards.h"
 
-#include "heston_types.hpp"
+#include "heston_common.hpp"
 
 /* general method to read json data from filename */
 Json::Value read_params(char *filename);

@@ -6,10 +6,11 @@
 // 10. September 2013
 //
 
-#ifndef __HESTON_TYPES_HPP__
-#define __HESTON_TYPES_HPP__
+#ifndef __HESTON_COMMON_HPP
+#define __HESTON_COMMON_HPP
 
 #include <stdint.h>
+#include <iostream>
 
 struct HestonParams {
 	// call option
@@ -38,6 +39,20 @@ struct HestonParamsML : HestonParams {
 	uint32_t ml_path_cnt_start;
 	double ml_epsilon;
 };
+
+
+struct Statistics {
+	double mean;
+	double variance;
+	uint64_t cnt;
+
+	Statistics();
+	Statistics& operator+=(const Statistics &rhs);
+};
+inline Statistics operator+(Statistics lhs, const Statistics &rhs);
+std::ostream& operator<<(std::ostream& o, const Statistics &s);
+
+
 
 #endif
 
