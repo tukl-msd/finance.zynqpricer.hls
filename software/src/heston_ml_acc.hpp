@@ -11,7 +11,7 @@
 
 #include "json/json-forwards.h"
 
-#include "heston_types.hpp"
+#include "heston_common.hpp"
 
 float heston_ml_hw(const Json::Value &bitstream, 
 		const HestonParamsML &ml_params);
