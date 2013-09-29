@@ -87,9 +87,8 @@ void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml,
 int main(int argc, char *argv[]) {
 #ifdef WITH_MPI
 	MPI_Init(&argc, &argv);
-	int rank, size;
+	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 	bool run_sl, run_ml, run_acc, run_cpu;
 	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu);

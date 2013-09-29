@@ -148,19 +148,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 
 template<typename calc_t>
 calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
-#ifndef WITH_MPI
-	int nt = std::thread::hardware_concurrency();
-	p.path_cnt /= nt;
-	std::vector<std::future<calc_t> > f;
-	for (int i = 0; i < nt; ++i) {
-		f.push_back(std::async(std::launch::async, 
-					heston_sl_cpu_kernel<calc_t, 64>, p, nullptr));
-	}
-	calc_t sum = 0;
-	for (int i = 0; i < nt; ++i)
-		sum += f[i].get();
-	return (calc_t)(sum / nt);
-#else
+#ifdef WITH_MPI
 	int rank, size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -186,6 +174,23 @@ calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
 	}
 
 	return (calc_t)(result / total_path_cnt);
+#else
+	int nt = std::thread::hardware_concurrency();
+	p.path_cnt /= nt;
+	std::vector<std::future<calc_t> > f;
+	std::vector<Statistics> t_stats(nt);
+	for (int i = 0; i < nt; ++i) {
+		f.push_back(std::async(std::launch::async, 
+					heston_sl_cpu_kernel<calc_t, 64>, p, 
+					stats == nullptr ? nullptr : &t_stats[i]));
+	}
+	calc_t sum = 0;
+	for (int i = 0; i < nt; ++i) {
+		sum += f[i].get();
+		if (stats != nullptr)
+			(*stats) += t_stats[i];
+	}
+	return (calc_t)(sum / nt);
 #endif
 }
 

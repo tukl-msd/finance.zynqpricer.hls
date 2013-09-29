@@ -104,6 +104,13 @@ if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
 
+#### exe:eval_heston ##############################################
+add_executable(eval_heston eval_heston.cpp)
+target_link_libraries(eval_heston json_helper heston_sl_cpu)
+if (WITH_MPI)
+	target_link_libraries(run_heston ${MPI_LIBRARIES})
+endif()
+
 #### exe:read_fifo ######################################################
 add_executable(read_fifo read_fifo.cpp)
 target_link_libraries(read_fifo iodev)
@@ -121,6 +128,6 @@ target_link_libraries(read_heston iodev)
 
 ### install targets ###
 
-INSTALL(TARGETS init_rng run_heston read_fifo read_rng read_heston
+INSTALL(TARGETS init_rng run_heston eval_heston read_fifo read_rng read_heston
 		RUNTIME DESTINATION bin OPTIONAL)
 
