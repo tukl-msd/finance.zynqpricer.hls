@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
 		if (do_print)
 			std::cout << "{step_cnt: " << sl_params.step_cnt << 
 					", stats: " << stats << ", duration: " <<
-					duration << ", sigma: " << sigma << "}" << std::endl;
+					duration << ", sigma: " << sigma << "}" << 
+					std::endl << std::flush;
 	}
 
 #ifdef WITH_MPI
