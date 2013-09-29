@@ -147,7 +147,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 }
 
 template<typename calc_t>
-calc_t heston_sl_cpu(HestonParamsSL p) {
+calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
 #ifndef WITH_MPI
 	int nt = std::thread::hardware_concurrency();
 	p.path_cnt /= nt;
@@ -167,22 +167,22 @@ calc_t heston_sl_cpu(HestonParamsSL p) {
 	uint64_t total_path_cnt = p.path_cnt;
 	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
 	Statistics local_stats;
-	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p, &local_stats) * 
-			p.path_cnt;
+	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p, 
+			(stats == nullptr ? nullptr : &local_stats)) * p.path_cnt;
 	double result = 0;
 	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
 			0, MPI_COMM_WORLD);
 
 	// combine statistics
-	Statistics stats_vec[size];
-	MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
-			&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
-	if (rank == 0) {
-		Statistics stats;
-		for (int i = 0; i < size; ++i) {
-			stats += stats_vec[i];
+	if (stats != nullptr) {
+		Statistics stats_vec[size];
+		MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+				&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
+		if (rank == 0) {
+			for (int i = 0; i < size; ++i) {
+				(*stats) += stats_vec[i];
+			}
 		}
-		std::cout << stats << std::endl;
 	}
 
 	return (calc_t)(result / total_path_cnt);

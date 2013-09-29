@@ -20,7 +20,8 @@ rm -rf build
 mkdir build
 
 cd build
-#cmake -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_INSTALL_PREFIX=.. ..
 cmake -DCMAKE_C_COMPILER=mpiicc -DCMAKE_CXX_COMPILER=mpiicpc -DCMAKE_INSTALL_PREFIX=.. ..
 make run_heston
 make install
+
+echo Run benchmark with: mpirun -n 32 bin/run_heston -sl -cpu parameters/params_acc_bench1.json

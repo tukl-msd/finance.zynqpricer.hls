@@ -107,10 +107,8 @@ int main(int argc, char *argv[]) {
 	double ref_price = ref["price"].asDouble();
 	double ref_price_precision = ref["precision"].asDouble();
 
-
 #ifdef WITH_MPI
 	if (rank == 0) {
-		std::cout << "size = " << size << std::endl;
 #endif
 	// benchmark
 	std::cout << "REF   : result = " << ref_price << std::endl;
@@ -132,7 +130,7 @@ int main(int argc, char *argv[]) {
 	}
 #else
 	if (run_acc) {
-		std::cerr << "Running accelerator only supported under Linux" << 
+		std::cerr << "ERROR: recompile with accelerator support" << 
 				std::endl;
 		return -1;
 	}
