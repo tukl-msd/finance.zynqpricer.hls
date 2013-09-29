@@ -15,5 +15,5 @@ mkdir build
 
 cd build
 cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=.. ..
-make -j 2 run_heston eval_heston
+make run_heston eval_heston
 make install

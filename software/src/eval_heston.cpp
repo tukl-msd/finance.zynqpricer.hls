@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
 	Json::Value json = read_params(argv[1]);
 	HestonParamsSL sl_params = get_sl_params(json);
 
-	for (int i = 0; i <= 16; ++i) {
-		sl_params.step_cnt = std::pow(2, i);
+	for (int level = 0; level <= 16; ++level) {
+		sl_params.step_cnt = std::pow(2, level);
 
 		Statistics stats;
 		auto start = std::chrono::steady_clock::now();
@@ -54,10 +54,11 @@ int main(int argc, char *argv[]) {
 		auto end = std::chrono::steady_clock::now();
 		double duration = std::chrono::duration<double>(
 				end - start).count();
+		double sigma = std::sqrt(stats.variance / stats.cnt);
 		if (do_print)
 			std::cout << "{step_cnt: " << sl_params.step_cnt << 
 					", stats: " << stats << ", duration: " <<
-					duration << "}" << std::endl;
+					duration << ", sigma: " << sigma << "}" << std::endl;
 	}
 
 #ifdef WITH_MPI
