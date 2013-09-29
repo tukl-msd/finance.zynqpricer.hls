@@ -149,12 +149,15 @@ calc_t heston_sl_cpu(HestonParamsSL p) {
 	int rank, size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	p.path_cnt /= size;
-	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p);
+	uint64_t total_path_cnt = p.path_cnt;
+	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
+	double local_res = 0;
+	if (p.path_cnt > 0)
+		local_res = heston_sl_cpu_kernel<calc_t, 64>(p) * p.path_cnt;
 	double result = 0;
 	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
 			0, MPI_COMM_WORLD);
-	return (calc_t)(result / size);
+	return (calc_t)(result / total_path_cnt);
 #endif
 }
 
