@@ -17,7 +17,7 @@
 #include <mutex>
 
 // get separate rng for each thread
-std::mt19937 &get_thread_rng() {
+std::mt19937 *get_thread_rng() {
 	static uint32_t rng_cnt = std::random_device()();
 	static std::map<std::thread::id, std::mt19937> rng_map;
 	static std::mutex m;
@@ -28,12 +28,12 @@ std::mt19937 &get_thread_rng() {
 			rng_map[std::this_thread::get_id()] = std::mt19937(rng_cnt);
 			++rng_cnt;
 		}
-		return rng_map[std::this_thread::get_id()];
+		return &rng_map[std::this_thread::get_id()];
 	}
 }
 
 #ifdef WITH_MPI
-std::mt19937 &get_mpi_rng() {
+std::mt19937 *get_mpi_rng() {
 	static std::mt19937 *local_rng = nullptr;
 	if (local_rng == nullptr) {
 		int rank, size;
@@ -45,7 +45,7 @@ std::mt19937 &get_mpi_rng() {
 		MPI_Bcast(&seed0, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 		local_rng = new std::mt19937(seed0 + rank);
 	}
-	return *local_rng;
+	return local_rng;
 }
 #endif
 
@@ -59,7 +59,7 @@ std::mt19937 &get_mpi_rng() {
  * while n goes from 0 to thread or process count - 1. seed0 is a
  * true random number.
  */
-std::mt19937 &get_rng() {
+std::mt19937 *get_rng() {
 #ifdef WITH_MPI
 	return get_mpi_rng();
 #else
