@@ -6,6 +6,10 @@
 // 27. August 2013
 //
 
+#ifdef WITH_MPI
+	#include "mpi.h"
+#endif
+
 #include "heston_sl_cpu.hpp"
 
 #include <random>
@@ -13,7 +17,7 @@
 #include <mutex>
 
 // get separate rng for each thread
-std::mt19937 get_thread_rng() {
+std::mt19937 &get_thread_rng() {
 	static uint32_t rng_cnt = std::random_device()();
 	static std::map<std::thread::id, std::mt19937> rng_map;
 	static std::mutex m;
@@ -27,3 +31,39 @@ std::mt19937 get_thread_rng() {
 		return rng_map[std::this_thread::get_id()];
 	}
 }
+
+#ifdef WITH_MPI
+std::mt19937 &get_mpi_rng() {
+	static std::mt19937 *local_rng = nullptr;
+	if (local_rng == nullptr) {
+		int rank, size;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+		MPI_Comm_size(MPI_COMM_WORLD, &size);
+		uint32_t seed0 = 0;
+		if (rank == 0) 
+			seed0 = std::random_device()();
+		MPI_Bcast(&seed0, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+		local_rng = new std::mt19937(seed0 + rank);
+	}
+	return *local_rng;
+}
+#endif
+
+/** return local random number generator
+ * 
+ * The local rng is seeded only once. When using threads
+ * for each thread an independent rng is returned, when using
+ * MPI for each process.
+ *
+ * The independent rngs are seeded consecutively with seed0 + n, 
+ * while n goes from 0 to thread or process count - 1. seed0 is a
+ * true random number.
+ */
+std::mt19937 &get_rng() {
+#ifdef WITH_MPI
+	return get_mpi_rng();
+#else
+	return get_thread_rng();
+#endif
+}
+
