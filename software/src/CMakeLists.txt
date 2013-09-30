@@ -59,6 +59,7 @@ target_link_libraries(heston_acc heston_common)
 set(HEADERS
 		heston_sl_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
+		../externals/ziggurat/gausszig_orig.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
