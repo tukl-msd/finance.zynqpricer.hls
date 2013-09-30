@@ -78,10 +78,10 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 };
 
 
-#ifdef _MSC_VER
-  #define INLINE __forceinline /* use __forceinline (VC++ specific) */
+#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
+  #define INLINE __forceinline
 #else
-  #define INLINE inline        /* use standard inline */
+  #define INLINE inline
 #endif
 
 template<typename calc_t, int BLOCK_SIZE>
