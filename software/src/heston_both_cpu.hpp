@@ -13,6 +13,8 @@
 	#include "mpi.h"
 #endif
 
+#include "ziggurat/gausszig_GSL.hpp"
+
 #include <stdint.h>
 
 #include <random>
@@ -71,9 +73,14 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 	}
 };
 
+#ifdef _MSC_VER
+  #define INLINE __forceinline /* use __forceinline (VC++ specific) */
+#else
+  #define INLINE inline        /* use standard inline */
+#endif
 
 template<typename calc_t, int BLOCK_SIZE>
-__forceinline inline void calculate_next_step(calc_t (&stock)[BLOCK_SIZE], 
+INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE], 
 		calc_t (&vola)[BLOCK_SIZE], bool (&barrier_hit)[BLOCK_SIZE],
 		const calc_t (&z_stock)[BLOCK_SIZE], const calc_t (&z_vola)[BLOCK_SIZE], 
 		const unsigned upper_i, const HestonParamsPrecalc<calc_t> &p) {
