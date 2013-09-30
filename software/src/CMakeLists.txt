@@ -16,9 +16,6 @@ if (WITH_MPI)
 	include_directories(${MPI_INCLUDE_PATH})
 endif()
 
-find_package(GSL REQUIRED)
-include_directories(${GSL_INCLUDE_DIRS})
-
 #### lib:iodev #######################################################
 set(HEADERS
 	iodev.hpp
@@ -73,7 +70,6 @@ if (WITH_MPI)
 	target_link_libraries(heston_sl_cpu ${MPI_LIBRARIES})
 endif()
 target_link_libraries(heston_sl_cpu heston_common)
-target_link_libraries(heston_sl_cpu ${GSL_LIBRARIES})
 
 
 #### lib:json_helper ##############################################

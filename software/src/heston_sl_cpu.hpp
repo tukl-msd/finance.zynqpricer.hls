@@ -25,8 +25,6 @@
 #endif
 
 #include "ziggurat/gausszig_GSL.hpp"
-#include "gsl/gsl_rng.h"
-#include "gsl/gsl_randist.h"
 
 #include <stdint.h>
 
@@ -69,11 +67,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 	}
 	double result = 0; // final result
 	double result_squared = 0;
-//	std::mt19937 *rng = get_rng();
-	gsl_rng *r = gsl_rng_alloc(gsl_rng_mt19937);
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	gsl_rng_set(r, rank);
+	std::mt19937 *rng = get_rng();
 	for (uint64_t path = 0; path < p.path_cnt; path += BLOCK_SIZE) {
 		// initialize
 		calc_t stock[BLOCK_SIZE];
@@ -91,12 +85,10 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 			calc_t z_stock[BLOCK_SIZE];
 			calc_t z_vola[BLOCK_SIZE];
 			for (unsigned i = 0; i < upper_i; i += 2) {
-//				calc_t z1 = (calc_t) Ziggurat<calc_t>::
-//						gsl_ran_gaussian_ziggurat(*rng);
-//				calc_t z2 = (calc_t) Ziggurat<calc_t>::
-//						gsl_ran_gaussian_ziggurat(*rng);
-				calc_t z1 = gsl_ran_gaussian_ziggurat(r, 1);
-				calc_t z2 = gsl_ran_gaussian_ziggurat(r, 1);
+				calc_t z1 = (calc_t) Ziggurat<calc_t>::
+						gsl_ran_gaussian_ziggurat(*rng);
+				calc_t z2 = (calc_t) Ziggurat<calc_t>::
+						gsl_ran_gaussian_ziggurat(*rng);
 				z_stock[i] = z1;
 				z_stock[i + 1] = -z1;
 				z_vola[i] = z2;
@@ -140,7 +132,6 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 				result_squared += price * price;
 		}
 	}
-	gsl_rng_free(r);
 	// payoff price and statistics
 	double discount_factor = std::exp(-p.riskless_rate * p.time_to_maturity);
 	result *= discount_factor;
