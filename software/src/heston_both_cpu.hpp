@@ -231,28 +231,22 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 	int rank, size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	uint64_t total_path_cnt = p.path_cnt;
-	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
-	Statistics local_stats;
-	double local_res = heston_cpu_kernel<calc_t, 64>(p, p.step_cnt, 
-			p.path_cnt) * p.path_cnt;
-	double result = 0;
-	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
-			0, MPI_COMM_WORLD);
+	uint64_t local_path_cnt = path_cnt / size + 
+			(path_cnt % size > rank ? 1 : 0);
+	Statistics local_stats = heston_cpu_kernel_serial<calc_t, 64>(p, step_cnt, 
+			local_path_cnt, do_multilevel, ml_constant);
 
 	// combine statistics
-	if (stats != nullptr) {
-		Statistics stats_vec[size];
-		MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
-				&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
-		if (rank == 0) {
-			for (int i = 0; i < size; ++i) {
-				(*stats) += stats_vec[i];
-			}
+	Statistics stats;
+	Statistics stats_vec[size];
+	MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+			&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
+	if (rank == 0) {
+		for (int i = 0; i < size; ++i) {
+			stats += stats_vec[i];
 		}
 	}
-
-	return (calc_t)(result / total_path_cnt);
+	return stats;
 #else
 	int nt = std::thread::hardware_concurrency();
 	std::vector<std::future<Statistics> > f;
