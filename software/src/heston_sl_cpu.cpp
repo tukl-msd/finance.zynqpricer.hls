@@ -6,9 +6,5 @@
 // 27. August 2013
 //
 
-#ifdef WITH_MPI
-	#include "mpi.h"
-#endif
-
 #include "heston_sl_cpu.hpp"
 

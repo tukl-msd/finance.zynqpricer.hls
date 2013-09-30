@@ -9,10 +9,6 @@
 #ifndef __HESTON_ML_CPU_HPP__
 #define __HESTON_ML_CPU_HPP__
 
-#ifdef WITH_MPI
-	#include "mpi.h"
-#endif
-
 #include "heston_common.hpp"
 #include "heston_ml_both.hpp"
 #include "heston_both_cpu.hpp"

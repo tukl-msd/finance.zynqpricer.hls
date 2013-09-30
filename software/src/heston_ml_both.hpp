@@ -11,10 +11,6 @@
 
 #include "heston_common.hpp"
 
-#ifdef WITH_MPI
-	#include "mpi.h"
-#endif
-
 #include <functional>
 
 /**
