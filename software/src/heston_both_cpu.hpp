@@ -18,6 +18,8 @@
 #include <stdint.h>
 
 #include <random>
+#include <thread>
+#include <future>
 
 #include "heston_common.hpp"
 #include "heston_ml_both.hpp"
@@ -78,10 +80,12 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 };
 
 
-#if defined(_MSC_VER) or defined(__INTEL_COMPILER)
-  #define INLINE __forceinline
+#ifndef __GNUC__
+	#define INLINE  __attribute__((always_inline));
+#elif defined(_MSC_VER) or defined(__INTEL_COMPILER)
+	#define INLINE __forceinline
 #else
-  #define INLINE inline
+	#define INLINE inline
 #endif
 
 template<typename calc_t, int BLOCK_SIZE>

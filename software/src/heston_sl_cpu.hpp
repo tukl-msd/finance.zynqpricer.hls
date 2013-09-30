@@ -20,20 +20,6 @@
 #ifndef __HESTON_SL_CPU_HPP__
 #define __HESTON_SL_CPU_HPP__
 
-#ifdef WITH_MPI
-	#include "mpi.h"
-#endif
-
-#include "ziggurat/gausszig_GSL.hpp"
-
-#include <stdint.h>
-
-#include <iostream>
-#include <cmath>
-#include <chrono>
-#include <thread>
-#include <future>
-
 #include "heston_common.hpp"
 #include "heston_both_cpu.hpp"
 
