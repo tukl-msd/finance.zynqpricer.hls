@@ -279,11 +279,13 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 /**
  * time step count for specific ml_level
  */
+/*
 uint32_t get_time_step_cnt(int ml_level, HestonParamsML params) {
 	return std::pow(params.ml_constant, ml_level + params.ml_start_level);
 }
+*/
 
-
+/*
 void print_performance(std::vector<Statistics> stats, 
 		HestonParamsML params,
 		std::vector<double> durations,
@@ -331,13 +333,14 @@ void print_performance(std::vector<Statistics> stats,
 			<< std::endl;
 	std::cout << std::endl;
 }
-
+*/
 
 /**
  * multilevel control, 
  * decides how many paths should be evaluated on which level and 
  * accumulates the results
  */
+/*
 float heston_ml_hw(const Json::Value &bitstream, 
 		const HestonParamsML &ml_params) {
 	auto start_f = std::chrono::steady_clock::now();
@@ -415,5 +418,5 @@ float heston_ml_hw(const Json::Value &bitstream,
 	print_performance(stats, ml_params, durations, start_f, end_f);
 	return r;
 }
-
+*/
 

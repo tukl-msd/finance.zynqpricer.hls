@@ -3,12 +3,8 @@
 // Microelectronic Systems Design Research Group
 //
 // Christian Brugger (brugger@eit.uni-kl.de)
-// 27. August 2013
+// 30. September 2013
 //
 
-#ifdef WITH_MPI
-	#include "mpi.h"
-#endif
-
-#include "heston_sl_cpu.hpp"
+#include "heston_ml_cpu.hpp"
 
