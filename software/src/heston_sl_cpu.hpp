@@ -68,6 +68,7 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 	double result = 0; // final result
 	double result_squared = 0;
 	std::mt19937 *rng = get_rng();
+	std::normal_distribution<calc_t>d;
 	for (uint64_t path = 0; path < p.path_cnt; path += BLOCK_SIZE) {
 		// initialize
 		calc_t stock[BLOCK_SIZE];
@@ -85,10 +86,8 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 			calc_t z_stock[BLOCK_SIZE];
 			calc_t z_vola[BLOCK_SIZE];
 			for (unsigned i = 0; i < upper_i; i += 2) {
-				calc_t z1 = (calc_t) Ziggurat<calc_t>::
-						gsl_ran_gaussian_ziggurat(*rng);
-				calc_t z2 = (calc_t) Ziggurat<calc_t>::
-						gsl_ran_gaussian_ziggurat(*rng);
+				calc_t z1 = d(*rng);
+				calc_t z2 = d(*rng);
 				z_stock[i] = z1;
 				z_stock[i + 1] = -z1;
 				z_vola[i] = z2;
