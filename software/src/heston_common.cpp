@@ -31,10 +31,12 @@ Statistics& Statistics::operator+=(const Statistics &rhs) {
 	return *this;
 }
 
-inline Statistics operator+(Statistics lhs, const Statistics &rhs) {
-	lhs += rhs;
-	return lhs;
+Statistics& Statistics::operator*=(const double &rhs) {
+	mean *= rhs;
+	variance *= rhs * rhs;
+	return *this;
 }
+
 std::ostream& operator<<(std::ostream& o, const Statistics &s) {
 	return o << "{mean: " << s.mean << ", variance: " <<
 			s.variance << ", cnt: " << s.cnt << "}";

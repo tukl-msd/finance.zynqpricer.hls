@@ -63,6 +63,7 @@ struct HestonParamsHWML {
  * Accumulates all log prices from all streams and calculates
  * all the multi-level metrics on the fly
  */
+/*
 class Pricer {
 public:
 	Pricer(const bool do_multilevel, const HestonParamsML params) 
@@ -102,6 +103,7 @@ private:
 	double price_variance = 0;
 	uint32_t price_cnt = 0;
 };
+*/
 
 
 /**

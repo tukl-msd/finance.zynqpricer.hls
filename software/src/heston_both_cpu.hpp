@@ -28,10 +28,11 @@ template<typename calc_t>
 struct HestonParamsPrecalc {
 	calc_t barrier_hit_correction;
 	calc_t step_size;
+	calc_t sqrt_step_size_fine;
 	calc_t sqrt_step_size;
 	calc_t log_spot_price;
 	calc_t reversion_rate_TIMES_step_size;
-	calc_t vol_of_vol_TIMES_sqrt_step_size;
+	calc_t vol_of_vol_TIMES_sqrt_step_size_fine;
 	calc_t double_riskless_rate;
 	calc_t log_lower_barrier_value;
 	calc_t log_upper_barrier_value;
@@ -39,14 +40,16 @@ struct HestonParamsPrecalc {
 	calc_t barrier_correction_factor;
 	calc_t long_term_avg_vola;
 
-	HestonParamsPrecalc(HestonParams p, const uint32_t step_cnt)
+	HestonParamsPrecalc(HestonParams p, const uint32_t step_cnt, 
+			uint32_t ml_constant)
 		// continuity correction, see Broadie, Glasserman, Kou (1997)
 		: barrier_hit_correction(0.5826), 
-		  step_size(p.time_to_maturity / step_cnt),
+		  step_size(p.time_to_maturity / step_cnt * ml_constant),
+		  sqrt_step_size_fine(std::sqrt(step_size / ml_constant)),
 		  sqrt_step_size(std::sqrt(step_size)),
 		  log_spot_price(std::log(p.spot_price)),
 		  reversion_rate_TIMES_step_size(p.reversion_rate * step_size),
-		  vol_of_vol_TIMES_sqrt_step_size(p.vol_of_vol * sqrt_step_size),
+		  vol_of_vol_TIMES_sqrt_step_size_fine(p.vol_of_vol * sqrt_step_size_fine),
 		  double_riskless_rate(2 * p.riskless_rate),
 		  log_lower_barrier_value(std::log(p.lower_barrier_value)),
 		  log_upper_barrier_value(std::log(p.upper_barrier_value)),
@@ -73,6 +76,7 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 	}
 };
 
+
 #ifdef _MSC_VER
   #define INLINE __forceinline /* use __forceinline (VC++ specific) */
 #else
@@ -86,9 +90,10 @@ INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE],
 		const unsigned upper_i, const HestonParamsPrecalc<calc_t> &p) {
 	// having any struct access in our inner most loop prevents
 	// msvc to vectorize our code: 6.15s instead of 5.26s (vectorized)
-	calc_t sqrt_step_size = p.sqrt_step_size;
+	calc_t sqrt_step_size_fine = p.sqrt_step_size_fine;
 	calc_t reversion_rate_TIMES_step_size = p.reversion_rate_TIMES_step_size;
-	calc_t vol_of_vol_TIMES_sqrt_step_size = p.vol_of_vol_TIMES_sqrt_step_size;
+	calc_t vol_of_vol_TIMES_sqrt_step_size_fine = 
+			p.vol_of_vol_TIMES_sqrt_step_size_fine;
 	calc_t double_riskless_rate = p.double_riskless_rate;
 	calc_t log_lower_barrier_value = p.log_lower_barrier_value;
 	calc_t log_upper_barrier_value = p.log_upper_barrier_value;
@@ -110,11 +115,11 @@ INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE],
 	}
 	for (unsigned i = 0; i < upper_i; ++i) {
 		stock[i] += (double_riskless_rate - max_vola[i]) *
-				half_step_size + sqrt_step_size * sqrt_vola[i] *
+				half_step_size + sqrt_step_size_fine * sqrt_vola[i] *
 				z_stock[i];
 		vola[i] += reversion_rate_TIMES_step_size *
 				(long_term_avg_vola - max_vola[i]) +
-				vol_of_vol_TIMES_sqrt_step_size * sqrt_vola[i] *
+				vol_of_vol_TIMES_sqrt_step_size_fine * sqrt_vola[i] *
 				z_vola[i];
 		barrier_correction[i] = barrier_correction_factor *
 				sqrt_vola[i];
@@ -135,7 +140,8 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 		Statistics zero;
 		return zero;
 	}
-	HestonParamsPrecalc<calc_t> p_precalc(p, step_cnt);
+	HestonParamsPrecalc<calc_t> p_precalc(p, step_cnt, 1);
+	HestonParamsPrecalc<calc_t> p_precalc_coarse(p, step_cnt, ml_constant);
 	// evaluate paths
 	if (BLOCK_SIZE % 2 != 0) {
 		std::cout << "ERROR: block size has to be even" << std::endl;
@@ -145,10 +151,11 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 		std::cout << "ERROR: step_cnt % ml_constant != 0" << std::endl;
 		exit(-1);
 	}
-	double result = 0; // final result
-	double result_squared = 0;
+//	double result = 0; // final result
+//	double result_squared = 0;
 	std::mt19937 *rng = get_rng();
 	calc_t z_stock_coarse[BLOCK_SIZE], z_vola_coarse[BLOCK_SIZE];
+	Pricer pricer(do_multilevel, p);
 	for (unsigned i = 0; i < BLOCK_SIZE; ++i)
 		z_stock_coarse[i] = z_vola_coarse[i] = 0;
 	for (uint64_t path = 0; path < path_cnt; path += BLOCK_SIZE) {
@@ -157,6 +164,7 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 		calc_t vola[BLOCK_SIZE], vola_coarse[BLOCK_SIZE];
 		bool barrier_hit[BLOCK_SIZE], barrier_hit_coarse[BLOCK_SIZE];
 		unsigned upper_i = std::min(path_cnt - path, (uint64_t) BLOCK_SIZE);
+		//TODO(brugger): benchmark only initialize fine path for ml level 0
 		for (unsigned i = 0; i < upper_i; ++i) {
 			stock[i] = stock_coarse[i] = p_precalc.log_spot_price;
 			vola[i] = vola_coarse[i] = p.vola_0;
@@ -177,7 +185,7 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 				if (step % ml_constant == 0) {
 					calculate_next_step(stock_coarse, vola_coarse, 
 							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
-							upper_i, p_precalc);
+							upper_i, p_precalc_coarse);
 					for (unsigned i = 0; i < upper_i; ++i)
 						z_stock_coarse[i] = z_vola_coarse[i] = 0;
 				} else {
@@ -190,21 +198,27 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 		}
 		// get price of option
 		for (unsigned i = 0; i < upper_i; ++i) {
-			calc_t spot = barrier_hit[i] ? 0 : std::exp(stock[i]);
-			calc_t price = std::max((calc_t)0, spot - (calc_t)p.strike_price);
-			result += price;
-			result_squared += price * price;
+			calc_t log_spot = barrier_hit[i] ? 
+					-std::numeric_limits<double>::infinity() : stock[i];
+			calc_t log_spot_coarse = 0;
+			if (do_multilevel)
+				log_spot_coarse = barrier_hit_coarse[i] ? 
+						-std::numeric_limits<double>::infinity() : stock_coarse[i];
+			pricer.handle_path(log_spot, log_spot_coarse);
+			//calc_t price = std::max((calc_t)0, spot - (calc_t)p.strike_price);
+			//result += price;
+			//result_squared += price * price;
 		}
 	}
 	// payoff price and statistics
 	double discount_factor = std::exp(-p.riskless_rate * p.time_to_maturity);
-	result *= discount_factor;
-	double mean = result / path_cnt;
-	result_squared *= discount_factor * discount_factor;
-	double variance = (result_squared - result * result / path_cnt) / 
-				(path_cnt - 1);
-	Statistics stats(mean, variance, path_cnt);
-	return stats;
+//	result *= discount_factor;
+//	double mean = result / path_cnt;
+//	result_squared *= discount_factor * discount_factor;
+//	double variance = (result_squared - result * result / path_cnt) / 
+//				(path_cnt - 1);
+//	Statistics stats(mean, variance, path_cnt);
+	return pricer.get_statistics() * discount_factor;
 }
 
 

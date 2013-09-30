@@ -49,8 +49,19 @@ struct Statistics {
 	Statistics();
 	Statistics(double mean, double variance, uint64_t cnt);
 	Statistics& operator+=(const Statistics &rhs);
+	Statistics& operator*=(const double &rhs);
 };
-inline Statistics operator+(Statistics lhs, const Statistics &rhs);
+
+inline Statistics operator+(Statistics lhs, const Statistics &rhs) {
+	lhs += rhs;
+	return lhs;
+}
+
+inline Statistics operator*(Statistics lhs, const double &rhs) {
+	lhs *= rhs;
+	return lhs;
+}
+
 std::ostream& operator<<(std::ostream& o, const Statistics &s);
 
 
