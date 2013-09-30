@@ -1,5 +1,7 @@
 /* gauss.c - gaussian random numbers, using the Ziggurat method
  *
+ * SOURCE: http://www.seehuhn.de/pages/ziggurat
+ *
  * Copyright (C) 2005  Jochen Voss.
  *
  * For details see the following article.
@@ -33,7 +35,7 @@
 
 
 /* position of right-most step */
-#define PARAM_R 3.44428647676
+#define PARAM_R 3.44428647676f
 
 /* tabulated values for the heigt of the Ziggurat levels */
 static const float ytab[128] = {
@@ -144,19 +146,25 @@ static const float wtab[128] = {
   1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
 
+static float rn_to_float_zig_orig(unsigned long rn) {
+	return rn * (float) (1. / 4294967296.0);
+}
+
 
 template<typename T>
 float
 //gsl_ran_gaussian_ziggurat_orig (gsl_rng *r, float sigma)
 gsl_ran_gaussian_ziggurat_orig (std::mt19937 &rng)
 {
-  unsigned long  U, sign, i, j;
+  unsigned long  U, i, j; //sign
+  int s;
   float  x, y;
 
   while (1) {
     U = rng();
     i = U & 0x0000007F;		/* 7 bit to choose the step */
-    sign = U & 0x00000080;	/* 1 bit for the sign */
+//    sign = U & 0x00000080;	/* 1 bit for the sign */
+	s = (U & 0x80) ? 1 : -1;
     j = U>>8;			/* 24 bit for the x-value */
 
     x = j*wtab[i];
@@ -166,13 +174,13 @@ gsl_ran_gaussian_ziggurat_orig (std::mt19937 &rng)
       float  y0, y1;
       y0 = ytab[i];
       y1 = ytab[i+1];
-      y = y1+(y0-y1)*rng();
+      y = y1+(y0-y1)*rn_to_float_zig_orig(rng());
     } else {
-      x = PARAM_R - log(1.0-rng())/PARAM_R;
-      y = exp(-PARAM_R*(x-0.5*PARAM_R))*rng();
+      x = PARAM_R - logf(1.0f-rn_to_float_zig_orig(rng()))/PARAM_R;
+      y = expf(-PARAM_R*(x-0.5f*PARAM_R))*rn_to_float_zig_orig(rng());
     }
-    if (y < exp(-0.5*x*x))  break;
+    if (y < expf(-0.5f*x*x))  break;
   }
-  return  sign ? x : -x;
+  return s * x; // sign ? x : -x;
 }
 
