@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
 
 		Statistics stats;
 		auto start = std::chrono::steady_clock::now();
-		heston_sl_cpu<float>(sl_params, &stats);
+		stats = heston_cpu_kernel_sl<float>(sl_params, sl_params.step_cnt, 
+				sl_params.path_cnt);
 		auto end = std::chrono::steady_clock::now();
 		double duration = std::chrono::duration<double>(
 				end - start).count();

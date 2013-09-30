@@ -20,6 +20,7 @@
 #include <random>
 
 #include "heston_common.hpp"
+#include "heston_ml_both.hpp"
 
 
 std::mt19937 *get_rng();
