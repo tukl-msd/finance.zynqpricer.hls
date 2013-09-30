@@ -128,62 +128,92 @@ INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE],
 
 // single threaded version
 template<typename calc_t, int BLOCK_SIZE>
-calc_t heston_cpu_kernel(const HestonParams &p, 
-		const uint32_t step_cnt, const uint64_t path_cnt) {
-	Statistics *stats = nullptr;
-	if (path_cnt == 0)
-		return 0;
+Statistics heston_cpu_kernel(const HestonParams &p, 
+		const uint32_t step_cnt, const uint64_t path_cnt,
+		const bool do_multilevel, const uint32_t ml_constant) {
+	if (path_cnt == 0){
+		Statistics zero;
+		return zero;
+	}
 	HestonParamsPrecalc<calc_t> p_precalc(p, step_cnt);
 	// evaluate paths
 	if (BLOCK_SIZE % 2 != 0) {
 		std::cout << "ERROR: block size has to be even" << std::endl;
 		exit(-1);
 	}
+	if (step_cnt % ml_constant != 0) {
+		std::cout << "ERROR: step_cnt % ml_constant != 0" << std::endl;
+		exit(-1);
+	}
 	double result = 0; // final result
 	double result_squared = 0;
 	std::mt19937 *rng = get_rng();
+	calc_t z_stock_coarse[BLOCK_SIZE], z_vola_coarse[BLOCK_SIZE];
+	for (unsigned i = 0; i < BLOCK_SIZE; ++i)
+		z_stock_coarse[i] = z_vola_coarse[i] = 0;
 	for (uint64_t path = 0; path < path_cnt; path += BLOCK_SIZE) {
 		// initialize
-		calc_t stock[BLOCK_SIZE];
-		calc_t vola[BLOCK_SIZE];
-		bool barrier_hit[BLOCK_SIZE];
+		calc_t stock[BLOCK_SIZE], stock_coarse[BLOCK_SIZE];
+		calc_t vola[BLOCK_SIZE], vola_coarse[BLOCK_SIZE];
+		bool barrier_hit[BLOCK_SIZE], barrier_hit_coarse[BLOCK_SIZE];
 		unsigned upper_i = std::min(path_cnt - path, (uint64_t) BLOCK_SIZE);
 		for (unsigned i = 0; i < upper_i; ++i) {
-			stock[i] = p_precalc.log_spot_price;
-			vola[i] = p.vola_0;
-			barrier_hit[i] = false;
+			stock[i] = stock_coarse[i] = p_precalc.log_spot_price;
+			vola[i] = vola_coarse[i] = p.vola_0;
+			barrier_hit[i] = barrier_hit_coarse[i] = false;
 		}
 		// calc all steps (takes 99 % of time)
-		for (unsigned step = 0; step < step_cnt; ++step) {
-			// calc random numbers ( takes 70 % of time)
+		for (unsigned step = 1; step <= step_cnt; ++step) {
 			calc_t z_stock[BLOCK_SIZE];
 			calc_t z_vola[BLOCK_SIZE];
+			// calc random numbers ( takes 70 % of time)
 			get_atithetic_rn(z_stock, z_vola, upper_i, rng);
 			// calculate next step (takes 30 % of time)
 			calculate_next_step(stock, vola, barrier_hit, z_stock, z_vola, 
 					upper_i, p_precalc);
+			
+			// calc coarse
+			if (do_multilevel) {
+				if (step % ml_constant == 0) {
+					calculate_next_step(stock_coarse, vola_coarse, 
+							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
+							upper_i, p_precalc);
+					for (unsigned i = 0; i < upper_i; ++i)
+						z_stock_coarse[i] = z_vola_coarse[i] = 0;
+				} else {
+					for (unsigned i = 0; i < upper_i; ++i) {
+						z_stock_coarse[i] += z_stock[i];
+						z_vola_coarse[i] += z_vola[i];
+					}
+				}
+			}
 		}
 		// get price of option
 		for (unsigned i = 0; i < upper_i; ++i) {
 			calc_t spot = barrier_hit[i] ? 0 : std::exp(stock[i]);
 			calc_t price = std::max((calc_t)0, spot - (calc_t)p.strike_price);
 			result += price;
-			if (stats != nullptr)
-				result_squared += price * price;
+			result_squared += price * price;
 		}
 	}
 	// payoff price and statistics
 	double discount_factor = std::exp(-p.riskless_rate * p.time_to_maturity);
 	result *= discount_factor;
 	double mean = result / path_cnt;
-	if (stats != nullptr) {
-		stats->mean = mean;
-		result_squared *= discount_factor * discount_factor;
-		stats->variance = (result_squared - result * result / path_cnt) / 
+	result_squared *= discount_factor * discount_factor;
+	double variance = (result_squared - result * result / path_cnt) / 
 				(path_cnt - 1);
-		stats->cnt = path_cnt;
-	}
-	return (calc_t)mean;
+	Statistics stats(mean, variance, path_cnt);
+	return stats;
 }
+
+
+template<typename calc_t, int BLOCK_SIZE>
+Statistics heston_cpu_kernel_sl(const HestonParams &p, 
+		const uint32_t step_cnt, const uint64_t path_cnt) {
+	return heston_cpu_kernel<calc_t, BLOCK_SIZE>(p, step_cnt, path_cnt, 
+			false, 1);
+}
+
 
 #endif

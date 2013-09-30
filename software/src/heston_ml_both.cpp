@@ -80,7 +80,7 @@ void print_performance(std::vector<Statistics> stats,
  */
 float heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
-		const uint32_t, const bool)> ml_kernel) {
+		const uint64_t, const bool, const uint32_t)> ml_kernel) {
 	auto start_f = std::chrono::steady_clock::now();
 
 	int current_level = 0;
@@ -113,7 +113,7 @@ float heston_ml_control(const HestonParamsML &ml_params,
 						path_cnt_todo << std::endl;
 				auto start = std::chrono::steady_clock::now();
 				Statistics new_stats = ml_kernel(ml_params, step_cnt, 
-						path_cnt_todo, do_multilevel);
+						path_cnt_todo, do_multilevel, ml_params.ml_constant);
 				auto end = std::chrono::steady_clock::now();
 				durations[level] += std::chrono::duration<double>(
 						end - start).count();

@@ -14,6 +14,11 @@
 Statistics::Statistics() : mean(0), variance(0), cnt(0) {
 }
 
+
+Statistics::Statistics(double mean, double variance, uint64_t cnt)
+		 : mean(mean), variance(variance), cnt(cnt) {
+}
+
 Statistics& Statistics::operator+=(const Statistics &rhs) {
 	uint64_t new_cnt = cnt + rhs.cnt;
 	double new_mean = (cnt * mean + rhs.mean * rhs.cnt) / new_cnt;

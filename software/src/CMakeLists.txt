@@ -109,6 +109,7 @@ endif()
 if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
+target_link_libraries(heston_acc heston_common)
 
 #### exe:eval_heston ##############################################
 add_executable(eval_heston eval_heston.cpp)

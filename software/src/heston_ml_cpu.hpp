@@ -14,10 +14,13 @@
 #endif
 
 #include "heston_common.hpp"
+#include "heston_ml_both.hpp"
+#include "heston_both_cpu.hpp"
 
 template<typename calc_t>
 calc_t heston_ml_cpu(const HestonParamsML p) {
-	return 0;
+	//TODO(brugger): make double capable
+	return heston_ml_control(p,	heston_cpu_kernel<float, 64>);
 }
 
 #endif

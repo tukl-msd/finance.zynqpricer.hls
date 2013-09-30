@@ -47,6 +47,7 @@ struct Statistics {
 	uint64_t cnt;
 
 	Statistics();
+	Statistics(double mean, double variance, uint64_t cnt);
 	Statistics& operator+=(const Statistics &rhs);
 };
 inline Statistics operator+(Statistics lhs, const Statistics &rhs);

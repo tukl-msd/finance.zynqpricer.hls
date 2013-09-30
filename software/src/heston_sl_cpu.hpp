@@ -38,7 +38,7 @@
 #include "heston_both_cpu.hpp"
 
 template<typename calc_t>
-calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
+calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats_=nullptr) {
 #ifdef WITH_MPI
 	int rank, size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -68,19 +68,17 @@ calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
 #else
 	int nt = std::thread::hardware_concurrency();
 	p.path_cnt /= nt;
-	std::vector<std::future<calc_t> > f;
-	std::vector<Statistics> t_stats(nt);
+	std::vector<std::future<Statistics> > f;
 	for (int i = 0; i < nt; ++i) {
 		f.push_back(std::async(std::launch::async, 
-			heston_cpu_kernel<calc_t, 64>, p, p.step_cnt, p.path_cnt));
+			heston_cpu_kernel_sl<calc_t, 64>, p, p.step_cnt, 
+			p.path_cnt));
 	}
-	calc_t sum = 0;
+	Statistics stats;
 	for (int i = 0; i < nt; ++i) {
-		sum += f[i].get();
-		if (stats != nullptr)
-			(*stats) += t_stats[i];
+		stats += f[i].get();
 	}
-	return (calc_t)(sum / nt);
+	return (calc_t)(stats.mean);
 #endif
 }
 
