@@ -110,7 +110,7 @@ void print_performance(std::vector<Statistics> stats,
  * decides how many paths should be evaluated on which level and 
  * accumulates the results
  */
-float heston_ml_control(const HestonParamsML &ml_params,
+double heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
 		const uint64_t, const bool, const uint32_t)> ml_kernel) {
 	auto start_f = std::chrono::steady_clock::now();

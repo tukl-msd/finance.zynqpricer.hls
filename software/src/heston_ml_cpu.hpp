@@ -19,8 +19,7 @@
 
 template<typename calc_t>
 calc_t heston_ml_cpu(const HestonParamsML p) {
-	//TODO(brugger): make double capable
-	return heston_ml_control(p,	heston_cpu_kernel<float, 64>);
+	return heston_ml_control(p,	heston_cpu_kernel<calc_t>);
 }
 
 #endif

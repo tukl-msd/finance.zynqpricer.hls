@@ -133,7 +133,7 @@ INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE],
 
 // single threaded version
 template<typename calc_t, int BLOCK_SIZE>
-Statistics heston_cpu_kernel(const HestonParams &p, 
+Statistics heston_cpu_kernel_serial(const HestonParams &p, 
 		const uint32_t step_cnt, const uint64_t path_cnt,
 		const bool do_multilevel, const uint32_t ml_constant) {
 	if (path_cnt == 0){
@@ -222,11 +222,58 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 }
 
 
-template<typename calc_t, int BLOCK_SIZE>
+template<typename calc_t>
+Statistics heston_cpu_kernel(const HestonParams &p, 
+		const uint32_t step_cnt, const uint64_t path_cnt,
+		const bool do_multilevel, const uint32_t ml_constant) {
+#ifdef WITH_MPI
+	int rank, size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	uint64_t total_path_cnt = p.path_cnt;
+	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
+	Statistics local_stats;
+	double local_res = heston_cpu_kernel<calc_t, 64>(p, p.step_cnt, 
+			p.path_cnt) * p.path_cnt;
+	double result = 0;
+	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
+			0, MPI_COMM_WORLD);
+
+	// combine statistics
+	if (stats != nullptr) {
+		Statistics stats_vec[size];
+		MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+				&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
+		if (rank == 0) {
+			for (int i = 0; i < size; ++i) {
+				(*stats) += stats_vec[i];
+			}
+		}
+	}
+
+	return (calc_t)(result / total_path_cnt);
+#else
+	int nt = std::thread::hardware_concurrency();
+	std::vector<std::future<Statistics> > f;
+	for (int i = 0; i < nt; ++i) {
+		uint64_t local_path_cnt = path_cnt / nt + (path_cnt % nt > i ? 1 : 0);
+		f.push_back(std::async(std::launch::async, 
+				heston_cpu_kernel_serial<calc_t, 64>, p, step_cnt, 
+				local_path_cnt, do_multilevel, ml_constant));
+	}
+	Statistics stats;
+	for (int i = 0; i < nt; ++i) {
+		stats += f[i].get();
+	}
+	return stats;
+#endif
+}
+
+
+template<typename calc_t>
 Statistics heston_cpu_kernel_sl(const HestonParams &p, 
 		const uint32_t step_cnt, const uint64_t path_cnt) {
-	return heston_cpu_kernel<calc_t, BLOCK_SIZE>(p, step_cnt, path_cnt, 
-			false, 1);
+	return heston_cpu_kernel<calc_t>(p, step_cnt, path_cnt, false, 1);
 }
 
 
