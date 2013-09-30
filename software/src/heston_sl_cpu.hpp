@@ -25,6 +25,7 @@
 #endif
 
 #include "ziggurat/gausszig_GSL.hpp"
+#include "ziggurat/gausszig_orig.hpp"
 
 #include <stdint.h>
 
@@ -85,10 +86,14 @@ calc_t heston_sl_cpu_kernel(HestonParamsSL p, Statistics *stats=nullptr) {
 			calc_t z_stock[BLOCK_SIZE];
 			calc_t z_vola[BLOCK_SIZE];
 			for (unsigned i = 0; i < upper_i; i += 2) {
-				calc_t z1 = (calc_t) Ziggurat<calc_t>::
-						gsl_ran_gaussian_ziggurat(*rng);
-				calc_t z2 = (calc_t) Ziggurat<calc_t>::
-						gsl_ran_gaussian_ziggurat(*rng);
+//				calc_t z1 = (calc_t) Ziggurat<calc_t>::
+//						gsl_ran_gaussian_ziggurat(*rng);
+//				calc_t z2 = (calc_t) Ziggurat<calc_t>::
+//						gsl_ran_gaussian_ziggurat(*rng);
+				calc_t z1 = (calc_t) gsl_ran_gaussian_ziggurat_orig<float>(
+						*rng);
+				calc_t z2 = (calc_t) gsl_ran_gaussian_ziggurat_orig<float>(
+						*rng);
 				z_stock[i] = z1;
 				z_stock[i + 1] = -z1;
 				z_vola[i] = z2;

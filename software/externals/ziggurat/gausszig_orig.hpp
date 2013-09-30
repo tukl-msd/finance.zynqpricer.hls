@@ -36,7 +36,7 @@
 #define PARAM_R 3.44428647676
 
 /* tabulated values for the heigt of the Ziggurat levels */
-static const double ytab[128] = {
+static const float ytab[128] = {
   1, 0.963598623011, 0.936280813353, 0.913041104253,
   0.892278506696, 0.873239356919, 0.855496407634, 0.838778928349,
   0.822902083699, 0.807732738234, 0.793171045519, 0.779139726505,
@@ -109,7 +109,7 @@ static const unsigned long ktab[128] = {
 };
 
 /* tabulated values of 2^{-24}*x[i] */
-static const double wtab[128] = {
+static const float wtab[128] = {
   1.62318314817e-08, 2.16291505214e-08, 2.54246305087e-08, 2.84579525938e-08,
   3.10340022482e-08, 3.33011726243e-08, 3.53439060345e-08, 3.72152672658e-08,
   3.8950989572e-08, 4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
@@ -145,31 +145,16 @@ static const double wtab[128] = {
 };
 
 
-static unsigned long
-gsl_rng_uint32 (gsl_rng *r)
-/* the uniform distribution on 0..2^{32}-1 */
-{
-  unsigned long min = gsl_rng_min (r);
-  unsigned long max = gsl_rng_max (r);
-
-  if (min == 0 && max == 4294967295U) { /* we have full 32 bit values */
-    return  gsl_rng_get (r);
-  } else {
-    assert (max-min >= 65536); /* make sure we have at least 16 bit */
-    unsigned long a = (gsl_rng_get (r)-min)&0xFFFF;
-    unsigned long b = (gsl_rng_get (r)-min)&0xFFFF;
-    return  (a<<16)|b;
-  }
-}
-
-double
-gsl_ran_gaussian_ziggurat (gsl_rng *r, double sigma)
+template<typename T>
+float
+//gsl_ran_gaussian_ziggurat_orig (gsl_rng *r, float sigma)
+gsl_ran_gaussian_ziggurat_orig (std::mt19937 &rng)
 {
   unsigned long  U, sign, i, j;
-  double  x, y;
+  float  x, y;
 
   while (1) {
-    U = gsl_rng_uint32 (r);
+    U = rng();
     i = U & 0x0000007F;		/* 7 bit to choose the step */
     sign = U & 0x00000080;	/* 1 bit for the sign */
     j = U>>8;			/* 24 bit for the x-value */
@@ -178,15 +163,16 @@ gsl_ran_gaussian_ziggurat (gsl_rng *r, double sigma)
     if (j < ktab[i])  break;
 
     if (i<127) {
-      double  y0, y1;
+      float  y0, y1;
       y0 = ytab[i];
       y1 = ytab[i+1];
-      y = y1+(y0-y1)*gsl_rng_uniform(r);
+      y = y1+(y0-y1)*rng();
     } else {
-      x = PARAM_R - log(1.0-gsl_rng_uniform(r))/PARAM_R;
-      y = exp(-PARAM_R*(x-0.5*PARAM_R))*gsl_rng_uniform(r);
+      x = PARAM_R - log(1.0-rng())/PARAM_R;
+      y = exp(-PARAM_R*(x-0.5*PARAM_R))*rng();
     }
     if (y < exp(-0.5*x*x))  break;
   }
-  return  sign ? sigma*x : -sigma*x;
+  return  sign ? x : -x;
 }
+
