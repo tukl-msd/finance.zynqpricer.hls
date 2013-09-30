@@ -39,7 +39,7 @@ create-msvc11-prj.bat
 
 This will create a new Microsoft Visual Studio 2012 project in the folder ```build-msvc``` To create a second project you can specify a folder suffix as a parameter. Then open the solution file.
 
-In the project switch from Debug to Release and set ```run_cpu``` as the startup project. Adapt the run parameters and specify a parameter file, e.g. ```params_msvc.json```, as first argument. Then you can build and run the CPU benchmark.
+In the project switch from Debug to Release and set ```run_heston``` as the startup project. Adapt the run parameters and specify a parameter file, e.g. ```-sl -cpu <project_path>/parameters/params_msvc.json```, as arguments. Then you can build and run the CPU benchmark.
 
 Make sure your Machine supports AVX instructions, otherwise the executable will crash. In that case you have to disable this specific compiler flag.
 
