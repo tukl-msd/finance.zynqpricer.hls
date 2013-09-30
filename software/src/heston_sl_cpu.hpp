@@ -46,8 +46,8 @@ calc_t heston_sl_cpu(HestonParamsSL p, Statistics *stats=nullptr) {
 	uint64_t total_path_cnt = p.path_cnt;
 	p.path_cnt = total_path_cnt / size + (total_path_cnt % size > rank ? 1 : 0);
 	Statistics local_stats;
-	double local_res = heston_sl_cpu_kernel<calc_t, 64>(p, 
-			(stats == nullptr ? nullptr : &local_stats)) * p.path_cnt;
+	double local_res = heston_cpu_kernel<calc_t, 64>(p, p.step_cnt, 
+			p.path_cnt) * p.path_cnt;
 	double result = 0;
 	MPI_Reduce(&local_res, &result, 1, MPI_DOUBLE, MPI_SUM, 
 			0, MPI_COMM_WORLD);
