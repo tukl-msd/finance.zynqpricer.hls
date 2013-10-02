@@ -11,6 +11,7 @@
 #endif
 
 #include "heston_sl_cpu.hpp"
+#include "heston_ml_cpu.hpp"
 #ifdef WITH_ACC
 	#include "heston_sl_acc.hpp"
 	#include "heston_ml_acc.hpp"
@@ -142,7 +143,11 @@ int main(int argc, char *argv[]) {
 		std::cout << "CPU-SL: "; print_duration(start_cpu, end_cpu, steps);
 	}
 	if (run_cpu && run_ml) {
-		std::cout << "CPU-ML: not implemented yet" << std::endl;
+		auto start_cpu = std::chrono::steady_clock::now();
+		double result_cpu = heston_ml_cpu<float>(ml_params);
+		auto end_cpu = std::chrono::steady_clock::now();
+		std::cout << "CPU-ML: result = " << result_cpu << std::endl;
+		std::cout << "CPU-ML: "; print_duration(start_cpu, end_cpu, steps);
 	}
 
 #ifdef WITH_MPI

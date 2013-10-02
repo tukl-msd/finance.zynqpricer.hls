@@ -30,10 +30,12 @@ add_library(iodev STATIC ${SOURCE} ${HEADERS})
 #### lib:heston_common ##############################################
 set(HEADERS
 		heston_common.hpp
+		heston_ml_both.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		heston_common.cpp
+		heston_ml_both.cpp
 )
 add_library(heston_common STATIC ${SOURCE} ${HEADERS})
 
@@ -55,21 +57,25 @@ target_link_libraries(heston_acc iodev)
 target_link_libraries(heston_acc heston_common)
 
 
-#### lib:heston_sl_cpu ##############################################
+#### lib:heston_cpu ##############################################
 set(HEADERS
+		heston_both_cpu.hpp
 		heston_sl_cpu.hpp
+		heston_ml_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
+		heston_both_cpu.cpp
 		heston_sl_cpu.cpp
+		heston_ml_cpu.cpp
 )
-add_library(heston_sl_cpu STATIC ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
+add_library(heston_cpu STATIC ${SOURCE} ${HEADERS})
+target_link_libraries(heston_cpu ${CMAKE_THREAD_LIBS_INIT})
 if (WITH_MPI)
-	target_link_libraries(heston_sl_cpu ${MPI_LIBRARIES})
+	target_link_libraries(heston_cpu ${MPI_LIBRARIES})
 endif()
-target_link_libraries(heston_sl_cpu heston_common)
+target_link_libraries(heston_cpu heston_common)
 
 
 #### lib:json_helper ##############################################
@@ -96,17 +102,18 @@ target_link_libraries(init_rng mt19937)
 
 #### exe:run_heston ##############################################
 add_executable(run_heston run_heston.cpp)
-target_link_libraries(run_heston json_helper heston_sl_cpu)
+target_link_libraries(run_heston json_helper heston_cpu)
 if (WITH_ACC)
 	target_link_libraries(run_heston heston_acc)
 endif()
 if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
+target_link_libraries(heston_acc heston_common)
 
 #### exe:eval_heston ##############################################
 add_executable(eval_heston eval_heston.cpp)
-target_link_libraries(eval_heston json_helper heston_sl_cpu)
+target_link_libraries(eval_heston json_helper heston_cpu)
 if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
