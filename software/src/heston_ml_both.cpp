@@ -15,38 +15,6 @@
 #include <cmath>
 
 
-Pricer::Pricer(const bool do_multilevel, const HestonParams params) 
-		: do_multilevel(do_multilevel), params(params),
-			price_mean(0), price_variance(0), price_cnt(0) {
-}
-
-void Pricer::handle_path(float fine_path, float coarse_path) {
-	float val = get_payoff(fine_path) - 
-			(do_multilevel ? get_payoff(coarse_path) : 0);
-	update_online_statistics(val);
-}
-
-Statistics Pricer::get_statistics() {
-	Statistics stats;
-	stats.mean = price_mean;
-	stats.variance =price_variance / (price_cnt - 1);
-	stats.cnt = price_cnt;
-	return stats;
-}
-
-float Pricer::get_payoff(float path) {
-	return std::max(0.f, std::exp(path) - (float) params.strike_price);
-}
-
-void Pricer::update_online_statistics(float val) {
-	// See Knuth TAOCP vol 2, 3rd edition, page 232
-	++price_cnt;
-	double delta = val - price_mean;
-	price_mean += delta / price_cnt;
-	price_variance += delta * (val - price_mean);
-};
-
-
 /**
  * time step count for specific ml_level
  */

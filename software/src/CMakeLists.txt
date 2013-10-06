@@ -102,18 +102,17 @@ target_link_libraries(init_rng mt19937)
 
 #### exe:run_heston ##############################################
 add_executable(run_heston run_heston.cpp)
-target_link_libraries(run_heston json_helper heston_cpu)
+target_link_libraries(run_heston json_helper heston_cpu heston_common)
 if (WITH_ACC)
 	target_link_libraries(run_heston heston_acc)
 endif()
 if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
-target_link_libraries(heston_acc heston_common)
 
 #### exe:eval_heston ##############################################
 add_executable(eval_heston eval_heston.cpp)
-target_link_libraries(eval_heston json_helper heston_cpu)
+target_link_libraries(eval_heston json_helper heston_cpu heston_common)
 if (WITH_MPI)
 	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()

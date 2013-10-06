@@ -22,10 +22,58 @@
 #include <future>
 
 #include "heston_common.hpp"
-#include "heston_ml_both.hpp"
+
+
+/**
+ * Accumulates all log prices from all streams and calculates
+ * all the multi-level metrics on the fly
+ */
+template<typename calc_t>
+class Pricer {
+public:
+	Pricer(const bool do_multilevel, const HestonParams params)
+		: do_multilevel(do_multilevel), params(params),
+			price_mean(0), price_variance(0), price_cnt(0) {
+	}
+
+	void handle_path(calc_t fine_path, calc_t coarse_path=0) {
+		calc_t val = get_payoff(fine_path) - 
+				(do_multilevel ? get_payoff(coarse_path) : (calc_t) 0);
+		update_online_statistics(val);
+	}
+
+	Statistics get_statistics() {
+		Statistics stats;
+		stats.mean = price_mean;
+		stats.variance =price_variance / (price_cnt - 1);
+		stats.cnt = price_cnt;
+		return stats;
+	}
+private:
+	calc_t get_payoff(calc_t path) {
+		return std::max((calc_t) 0, std::exp(path) - 
+				(calc_t) params.strike_price);
+	}
+
+	void update_online_statistics(double val) {
+		// See Knuth TAOCP vol 2, 3rd edition, page 232
+		++price_cnt;
+		double delta = val - price_mean;
+		price_mean += delta / price_cnt;
+		price_variance += delta * (val - price_mean);
+	}
+
+	const bool do_multilevel;
+	const HestonParams params;
+
+	double price_mean;
+	double price_variance;
+	uint32_t price_cnt;
+};
 
 
 std::mt19937 *get_rng();
+
 
 template<typename calc_t>
 struct HestonParamsPrecalc {
@@ -153,13 +201,13 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 		std::cout << "ERROR: block size has to be even" << std::endl;
 		exit(-1);
 	}
-	if (step_cnt % ml_constant != 0) {
+	if (do_multilevel && (step_cnt % ml_constant != 0)) {
 		std::cout << "ERROR: step_cnt % ml_constant != 0" << std::endl;
 		exit(-1);
 	}
 	std::mt19937 *rng = get_rng();
 	calc_t z_stock_coarse[BLOCK_SIZE], z_vola_coarse[BLOCK_SIZE];
-	Pricer pricer(do_multilevel, p);
+	Pricer<calc_t> pricer(do_multilevel, p);
 	for (unsigned i = 0; i < BLOCK_SIZE; ++i)
 		z_stock_coarse[i] = z_vola_coarse[i] = 0;
 	for (uint64_t path = 0; path < path_cnt; path += BLOCK_SIZE) {
