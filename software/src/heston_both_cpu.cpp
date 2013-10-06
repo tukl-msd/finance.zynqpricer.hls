@@ -12,6 +12,8 @@
 #include <thread>
 #include <map>
 #include <mutex>
+#include <memory>
+
 
 std::mutex m_get_thread_rng;
 // get separate rng for each thread
@@ -20,13 +22,13 @@ std::mt19937 *get_thread_rng() {
 	{
 		static uint32_t rng_cnt = 0;
 		static uint32_t seed0 = std::random_device()();
-		static std::map<std::thread::id, std::unique_ptr<std::mt19937>> rng_map;
+		static std::map<std::thread::id, std::shared_ptr<std::mt19937> > rng_map;
 
 		auto it = rng_map.find(std::this_thread::get_id());
 		if (it == rng_map.end()) {
-			rng_map[std::this_thread::get_id()] = 
-					std::unique_ptr<std::mt19937>(
+			std::shared_ptr<std::mt19937> rng(
 					new std::mt19937(seed0 + rng_cnt));
+			rng_map[std::this_thread::get_id()] = rng;
 			++rng_cnt;
 		}
 		return &(*rng_map[std::this_thread::get_id()]);
