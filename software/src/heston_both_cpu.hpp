@@ -83,7 +83,7 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 	#define INLINE __forceinline
 #elif defined(__GNUC__)
-	#define INLINE  __attribute__((always_inline));
+	#define INLINE inline __attribute__((always_inline))
 #else
 	#define INLINE inline
 #endif

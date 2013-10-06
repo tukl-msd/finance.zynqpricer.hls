@@ -15,7 +15,7 @@
 
 template<typename calc_t>
 calc_t heston_ml_cpu(const HestonParamsML p) {
-	return heston_ml_control(p,	heston_cpu_kernel<calc_t>);
+	return heston_ml_control(p, heston_cpu_kernel<calc_t>);
 }
 
 #endif
