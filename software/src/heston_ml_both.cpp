@@ -80,7 +80,8 @@ void print_performance(std::vector<Statistics> stats,
  */
 double heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
-		const uint64_t, const bool, const uint32_t)> ml_kernel) {
+		const uint64_t, const bool, const uint32_t)> ml_kernel,
+		bool do_print) {
 	auto start_f = std::chrono::steady_clock::now();
 
 	int current_level = 0;
@@ -107,10 +108,11 @@ double heston_ml_control(const HestonParamsML &ml_params,
 			if (path_cnt_todo > 0) {
 				uint32_t step_cnt = get_time_step_cnt(level, ml_params);
 				bool do_multilevel = (level > 0);
-				std::cout << "current_level " << current_level <<
-						" level " << level << " step_cnt " << 
-						step_cnt << " path_cnt " << 
-						path_cnt_todo << std::endl;
+				if (do_print)
+					std::cout << "current_level " << current_level <<
+							" level " << level << " step_cnt " << 
+							step_cnt << " path_cnt " << 
+							path_cnt_todo << std::endl;
 				auto start = std::chrono::steady_clock::now();
 				Statistics new_stats = ml_kernel(ml_params, step_cnt, 
 						path_cnt_todo, do_multilevel, ml_params.ml_constant);
@@ -153,6 +155,7 @@ double heston_ml_control(const HestonParamsML &ml_params,
 	double r = sum * exp(-ml_params.riskless_rate * ml_params.time_to_maturity);
 
 	auto end_f = std::chrono::steady_clock::now();
-	print_performance(stats, ml_params, durations, start_f, end_f);
+	if (do_print)
+		print_performance(stats, ml_params, durations, start_f, end_f);
 	return r;
 }

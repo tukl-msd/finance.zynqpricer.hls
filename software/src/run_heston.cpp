@@ -155,6 +155,9 @@ int main(int argc, char *argv[]) {
 		if (run_cpu && run_sl) {
 			heston_sl_cpu<float>(sl_params);
 		}
+		if (run_cpu && run_ml) {
+			heston_ml_cpu<float>(ml_params, false);
+		}
 	}
 	MPI_Finalize();
 #endif

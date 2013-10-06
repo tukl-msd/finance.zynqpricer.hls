@@ -126,7 +126,8 @@ int main(int argc, char *argv[]) {
 		eval_ml_heston(ml_params, do_print);
 	if (do_eval_sl)
 		eval_sl_heston(sl_params, do_print);
-	std::cout << "}" << std::endl;
+	if (do_print)
+		std::cout << "}" << std::endl;
 
 #ifdef WITH_MPI
 	MPI_Finalize();

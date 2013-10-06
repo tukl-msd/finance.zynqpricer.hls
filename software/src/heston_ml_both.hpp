@@ -16,6 +16,7 @@
 
 double heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
-		const uint64_t, const bool, const uint32_t)> ml_kernel);
+		const uint64_t, const bool, const uint32_t)> ml_kernel,
+		bool do_print=true);
 
 #endif
