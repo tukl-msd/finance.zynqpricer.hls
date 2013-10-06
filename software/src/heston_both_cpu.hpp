@@ -68,9 +68,9 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 		calc_t (&z_vola)[BLOCK_SIZE], const unsigned upper_i,
 		std::mt19937 *rng) {
 	for (unsigned i = 0; i < upper_i; i += 2) {
-		calc_t z1 = (calc_t) Ziggurat<calc_t>::
+		calc_t z1 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
-		calc_t z2 = (calc_t) Ziggurat<calc_t>::
+		calc_t z2 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
 		z_stock[i] = z1;
 		z_stock[i + 1] = -z1;
@@ -83,7 +83,7 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 #if defined(_MSC_VER) or defined(__INTEL_COMPILER)
 	#define INLINE __forceinline
 #elif defined(__GNUC__)
-	#define INLINE  __attribute__((always_inline));
+	#define INLINE inline __attribute__((always_inline))
 #else
 	#define INLINE inline
 #endif
@@ -93,8 +93,9 @@ INLINE void calculate_next_step(calc_t (&stock)[BLOCK_SIZE],
 		calc_t (&vola)[BLOCK_SIZE], bool (&barrier_hit)[BLOCK_SIZE],
 		const calc_t (&z_stock)[BLOCK_SIZE], const calc_t (&z_vola)[BLOCK_SIZE], 
 		const unsigned upper_i, const HestonParamsPrecalc<calc_t> &p) {
-	// having any struct access in our inner most loop prevents
-	// msvc to vectorize our code: 6.15s instead of 5.26s (vectorized)
+	// Having any struct access in our inner most loop prevents
+	// msvc to vectorize our code: 6.15s instead of 5.26s (vectorized).
+	// Make sure this fucntion is inlined, otherwise this is a huge overhead.
 	calc_t sqrt_step_size_fine = p.sqrt_step_size_fine;
 	calc_t reversion_rate_TIMES_step_size = p.reversion_rate_TIMES_step_size;
 	calc_t vol_of_vol_TIMES_sqrt_step_size_fine = 
@@ -156,8 +157,6 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 		std::cout << "ERROR: step_cnt % ml_constant != 0" << std::endl;
 		exit(-1);
 	}
-//	double result = 0; // final result
-//	double result_squared = 0;
 	std::mt19937 *rng = get_rng();
 	calc_t z_stock_coarse[BLOCK_SIZE], z_vola_coarse[BLOCK_SIZE];
 	Pricer pricer(do_multilevel, p);
@@ -208,21 +207,13 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 			calc_t log_spot_coarse = 0;
 			if (do_multilevel)
 				log_spot_coarse = barrier_hit_coarse[i] ? 
-						-std::numeric_limits<double>::infinity() : stock_coarse[i];
+						-std::numeric_limits<double>::infinity() : 
+						stock_coarse[i];
 			pricer.handle_path(log_spot, log_spot_coarse);
-			//calc_t price = std::max((calc_t)0, spot - (calc_t)p.strike_price);
-			//result += price;
-			//result_squared += price * price;
 		}
 	}
 	// payoff price and statistics
 	double discount_factor = std::exp(-p.riskless_rate * p.time_to_maturity);
-//	result *= discount_factor;
-//	double mean = result / path_cnt;
-//	result_squared *= discount_factor * discount_factor;
-//	double variance = (result_squared - result * result / path_cnt) / 
-//				(path_cnt - 1);
-//	Statistics stats(mean, variance, path_cnt);
 	return pricer.get_statistics() * discount_factor;
 }
 
