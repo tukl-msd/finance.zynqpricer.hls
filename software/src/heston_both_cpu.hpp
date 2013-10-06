@@ -68,9 +68,9 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 		calc_t (&z_vola)[BLOCK_SIZE], const unsigned upper_i,
 		std::mt19937 *rng) {
 	for (unsigned i = 0; i < upper_i; i += 2) {
-		calc_t z1 = (calc_t) Ziggurat<calc_t>::
+		calc_t z1 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
-		calc_t z2 = (calc_t) Ziggurat<calc_t>::
+		calc_t z2 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
 		z_stock[i] = z1;
 		z_stock[i + 1] = -z1;
