@@ -1,0 +1,17 @@
+{step_cnt: 1, stats: {mean: 0, variance: 0, cnt: 700000000}, duration: 0.624231, sigma: 0}
+{step_cnt: 2, stats: {mean: 0.0134772, variance: 0.0221852, cnt: 700000000}, duration: 0.05047, sigma: 5.62967e-06}
+{step_cnt: 4, stats: {mean: 0.11368, variance: 0.309037, cnt: 700000000}, duration: 0.083652, sigma: 2.10115e-05}
+{step_cnt: 8, stats: {mean: 0.292574, variance: 1.02452, cnt: 700000000}, duration: 0.148856, sigma: 3.82571e-05}
+{step_cnt: 16, stats: {mean: 0.498038, variance: 1.92081, cnt: 700000000}, duration: 0.369203, sigma: 5.23833e-05}
+{step_cnt: 32, stats: {mean: 0.640821, variance: 2.54336, cnt: 700000000}, duration: 0.884681, sigma: 6.02775e-05}
+{step_cnt: 64, stats: {mean: 0.704401, variance: 2.81987, cnt: 700000000}, duration: 1.46244, sigma: 6.34696e-05}
+{step_cnt: 128, stats: {mean: 0.730133, variance: 2.9338, cnt: 700000000}, duration: 2.17882, sigma: 6.4739e-05}
+{step_cnt: 256, stats: {mean: 0.740436, variance: 2.97656, cnt: 700000000}, duration: 4.87802, sigma: 6.52091e-05}
+{step_cnt: 512, stats: {mean: 0.744802, variance: 2.99253, cnt: 700000000}, duration: 10.0277, sigma: 6.53838e-05}
+{step_cnt: 1024, stats: {mean: 0.746925, variance: 2.99986, cnt: 700000000}, duration: 19.6874, sigma: 6.54638e-05}
+{step_cnt: 2048, stats: {mean: 0.747858, variance: 3.00264, cnt: 700000000}, duration: 35.0851, sigma: 6.54942e-05}
+{step_cnt: 4096, stats: {mean: 0.748283, variance: 3.00409, cnt: 700000000}, duration: 64.5568, sigma: 6.55099e-05}
+{step_cnt: 8192, stats: {mean: 0.748568, variance: 3.00491, cnt: 700000000}, duration: 129.115, sigma: 6.55189e-05}
+{step_cnt: 16384, stats: {mean: 0.74869, variance: 3.00532, cnt: 700000000}, duration: 258.093, sigma: 6.55234e-05}
+{step_cnt: 32768, stats: {mean: 0.748654, variance: 3.00514, cnt: 700000000}, duration: 524.475, sigma: 6.55214e-05}
+{step_cnt: 65536, stats: {mean: 0.748666, variance: 3.00488, cnt: 700000000}, duration: 1051.19, sigma: 6.55186e-05}
