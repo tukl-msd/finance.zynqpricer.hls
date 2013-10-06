@@ -234,17 +234,22 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 			
 			// calc coarse
 			if (do_multilevel) {
-				if (step % ml_constant == 0) {
-					calculate_next_step(stock_coarse, vola_coarse, 
-							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
-							upper_i, p_precalc_coarse);
-					for (unsigned i = 0; i < upper_i; ++i)
-						z_stock_coarse[i] = z_vola_coarse[i] = 0;
+				
+				if (step % ml_constant == 1) { // first coarse step
+					for (unsigned i = 0; i < upper_i; ++i) {
+						z_stock_coarse[i] = z_stock[i];
+						z_vola_coarse[i] = z_vola[i];
+					}
 				} else {
 					for (unsigned i = 0; i < upper_i; ++i) {
 						z_stock_coarse[i] += z_stock[i];
 						z_vola_coarse[i] += z_vola[i];
 					}
+				}
+				if (step % ml_constant == 0) { // last coarse step
+					calculate_next_step(stock_coarse, vola_coarse, 
+							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
+							upper_i, p_precalc_coarse);
 				}
 			}
 		}
