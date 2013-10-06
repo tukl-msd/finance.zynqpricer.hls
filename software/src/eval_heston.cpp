@@ -74,7 +74,7 @@ void eval_sl_heston(HestonParamsSL sl_params, bool do_print) {
 }
 
 
-void eval_ml_heston(HestonParamsML ml_params, bool do_print) {
+void eval_ml_heston(const HestonParamsML &ml_params, bool do_print) {
 	if (do_print)
 		std::cout << "  multi-level: {" << std::endl;
 	uint32_t ml_constant = 2;
