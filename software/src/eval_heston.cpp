@@ -77,7 +77,7 @@ void eval_sl_heston(HestonParamsSL sl_params, bool do_print) {
 void eval_ml_heston(HestonParamsML ml_params, bool do_print) {
 	if (do_print)
 		std::cout << "  multi-level: {" << std::endl;
-	uint32_t ml_constant = 4;
+	uint32_t ml_constant = 2;
 	uint64_t path_cnt = 100000;
 	for (int level = 0; level <= 10; ++level) {
 		uint32_t step_cnt = std::pow(ml_constant, level);
