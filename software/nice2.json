@@ -15,8 +15,8 @@
 		"upper": 1000
 	},
 	"simulation_sl": {
-		"step_cnt": 500,
-		"path_cnt": 100000
+		"step_cnt": 2,
+		"path_cnt": 10000000
 	},
 	"simulation_ml": {
 		"start_level": 1,
