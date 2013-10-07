@@ -68,6 +68,18 @@ HestonParamsML get_ml_params(Json::Value json) {
 	return params;
 }
 
+HestonParamsEval get_eval_params(Json::Value json) {
+	HestonParamsEval params;
+	parse_heston_params(json, params);
+	auto simulation = json["simulation_eval"];
+	params.eval_start_level = simulation["start_level"].asUInt();
+	params.eval_stop_level = simulation["stop_level"].asUInt();
+	params.ml_start_level = simulation["ml_start_level"].asUInt();
+	params.ml_constant = simulation["ml_constant"].asUInt();
+	params.path_cnt = simulation["path_cnt"].asUInt();
+	return params;
+}
+
 unsigned asHex(Json::Value val) {
 	return std::stoul(val.asString(), 0, 0);
 }

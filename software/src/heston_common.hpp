@@ -40,6 +40,14 @@ struct HestonParamsML : HestonParams {
 	double ml_epsilon;
 };
 
+struct HestonParamsEval : HestonParams {
+	uint32_t eval_start_level;
+	uint32_t eval_stop_level;
+	uint32_t ml_start_level;
+	uint32_t ml_constant;
+	uint32_t path_cnt;
+};
+
 
 struct Statistics {
 	double mean;

@@ -22,6 +22,9 @@ HestonParamsSL get_sl_params(Json::Value json);
 /* read json data and convert it to heston multi-level params */
 HestonParamsML get_ml_params(Json::Value json);
 
+/* read json data and convert it to heston multi-level params */
+HestonParamsEval get_eval_params(Json::Value json);
+
 unsigned asHex(Json::Value val);
 
 #endif

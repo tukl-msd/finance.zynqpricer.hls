@@ -24,6 +24,13 @@
 		"path_cnt_start": 10000,
 		"epsilon": 0.02
 	},
+	"simulation_eval": {
+		"start_level": 0,
+		"stop_level": 5,
+		"ml_start_level": 1,
+		"ml_constant": 4,
+		"path_cnt": 10000
+	},
 	"reference": {
 		"price": 0.74870,
 		"precision": 0.00001
