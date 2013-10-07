@@ -287,12 +287,10 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 	// combine statistics
 	Statistics stats;
 	Statistics stats_vec[size];
-	MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
-			&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
-	if (rank == 0) {
-		for (int i = 0; i < size; ++i) {
-			stats += stats_vec[i];
-		}
+	MPI_Allgather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+			&stats_vec, sizeof(local_stats), MPI_BYTE, MPI_COMM_WORLD);
+	for (int i = 0; i < size; ++i) {
+		stats += stats_vec[i];
 	}
 	return stats;
 #else
