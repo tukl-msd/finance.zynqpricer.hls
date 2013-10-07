@@ -35,8 +35,9 @@ void print_performance(std::vector<Statistics> stats,
 	for (int level = 0; level < stats.size(); ++level) {
 		level_duration_sum += durations[level];
 	}
-	std::cout << "Control overhead are " << duration - level_duration_sum 
-			<< "seconds" << std::endl;
+	std::cout << std::endl;
+	std::cout << "Control overhead is " << duration - level_duration_sum 
+			<< " seconds" << std::endl;
 	std::cout << std::endl;
 	// print steps / sec
 	uint64_t steps = 0;
@@ -112,7 +113,7 @@ double heston_ml_control(const HestonParamsML &ml_params,
 					std::cout << "current_level " << current_level <<
 							" level " << level << " step_cnt " << 
 							step_cnt << " path_cnt " << 
-							path_cnt_todo << std::endl;
+							path_cnt_todo << ": " << std::flush;
 				auto start = std::chrono::steady_clock::now();
 				Statistics new_stats = ml_kernel(ml_params, step_cnt, 
 						path_cnt_todo, do_multilevel, ml_params.ml_constant);
@@ -122,7 +123,8 @@ double heston_ml_control(const HestonParamsML &ml_params,
 
 				// update variance and mean
 				stats[level] += new_stats;
-				std::cout << new_stats << std::endl;
+				if (do_print)
+					std::cout << new_stats << std::endl << std::flush;
 			}
 		}
 
