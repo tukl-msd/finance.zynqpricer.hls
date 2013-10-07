@@ -51,8 +51,9 @@ void check_usage(int argc, char *argv[], bool &eval_sl, bool &eval_ml) {
 
 void eval_sl_heston(HestonParamsSL sl_params, bool do_print) {
 	if (do_print)
-		std::cout << "  single-level: {" << std::endl;
-	for (int level = 0; level <= 16; ++level) {
+		std::cout << "  single-level: [" << std::endl;
+	bool first = true;
+	for (int level = 0; level <= 6; ++level) {
 		sl_params.step_cnt = std::pow(2, level);
 
 		Statistics stats;
@@ -63,23 +64,28 @@ void eval_sl_heston(HestonParamsSL sl_params, bool do_print) {
 		double duration = std::chrono::duration<double>(
 				end - start).count();
 		double sigma = std::sqrt(stats.variance / stats.cnt);
-		if (do_print)
-			std::cout << "    {step_cnt: " << sl_params.step_cnt << 
-					", stats: " << stats << ", duration: " <<
-					duration << ", sigma: " << sigma << "}," << 
-					std::endl << std::flush;
+		if (do_print) {
+			if (!first) {
+				std::cout << ", " << std::endl;
+			}
+			std::cout << "    {\"step_cnt\": " << sl_params.step_cnt << 
+					", \"stats\": " << stats << ", \"duration\": " <<
+					duration << ", \"sigma\": " << sigma << "}" << std::flush;
+		}
+		first = false;
 	}
 	if (do_print)
-		std::cout << "  }," << std::endl;
+		std::cout << std::endl << "  ]";
 }
 
 
 void eval_ml_heston(const HestonParamsML &ml_params, bool do_print) {
 	if (do_print)
-		std::cout << "  multi-level: {" << std::endl;
+		std::cout << "  \"multi-level\": [" << std::endl;
 	uint32_t ml_constant = 2;
 	uint64_t path_cnt = 1000000;
-	for (int level = 0; level <= 10; ++level) {
+	bool first = true;
+	for (int level = 0; level <= 6; ++level) {
 		uint32_t step_cnt = std::pow(ml_constant, level);
 		bool do_multilevel = level != 0;
 
@@ -93,14 +99,19 @@ void eval_ml_heston(const HestonParamsML &ml_params, bool do_print) {
 		double sigma = std::sqrt(stats.variance / stats.cnt);
 		// https://en.wikipedia.org/w/index.php?title=Normal_distribution&oldid=563679165#Estimation_of_parameters
 		double var_sigma = 0;
-		if (do_print)
-			std::cout << "    {step_cnt: " << step_cnt << 
-					", stats: " << stats << ", duration: " <<
-					duration << ", sigma: " << sigma << "}, " << 
-					std::endl << std::flush;
+		if (do_print) {
+			if (!first) {
+				std::cout << ", " << std::endl;
+			}
+			std::cout << "    {\"step_cnt\": " << step_cnt << 
+					", \"stats\": " << stats << ", \"duration\": " <<
+					duration << ", \"sigma\": " << sigma << "}" << 
+					std::flush;
+		}
+		first = false;
 	}
 	if (do_print)
-		std::cout << "  }," << std::endl;
+		std::cout << std::endl << "  ]";
 }
 
 
@@ -124,8 +135,15 @@ int main(int argc, char *argv[]) {
 		std::cout << "{" << std::endl;
 	if (do_eval_ml)
 		eval_ml_heston(ml_params, do_print);
+	if (do_print) {
+		if (do_eval_ml && do_eval_sl && do_print)
+			std::cout << ",";
+		std::cout << std::endl;
+	}
 	if (do_eval_sl)
 		eval_sl_heston(sl_params, do_print);
+	if (do_print)
+		std::cout << std::endl;
 	if (do_print)
 		std::cout << "}" << std::endl;
 
