@@ -132,7 +132,7 @@ double heston_ml_control(const HestonParamsML &ml_params,
 			first_iteration_on_level = false;
 			for (int level = 0; level <= current_level; ++level) {
 				double sum = 0;
-				for (int l = 0; l <= level; ++l)
+				for (int l = 0; l <= current_level; ++l)
 					sum += sqrt(stats[l].variance / (ml_params.time_to_maturity /
 							get_time_step_cnt(l, ml_params)));
 				path_cnt_opt[level] = std::ceil(2 * 
