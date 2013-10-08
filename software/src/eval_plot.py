@@ -14,7 +14,9 @@ import platform
 from math import sqrt
 
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 
 
