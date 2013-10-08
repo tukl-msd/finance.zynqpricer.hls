@@ -11,7 +11,9 @@ import subprocess
 import json
 import shlex
 
-from matplotlib import pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 def plot_eval(cmd, fmt):
     raw = subprocess.check_output(shlex.split(cmd)).decode("utf-8")
