@@ -11,6 +11,7 @@ import subprocess
 import json
 import shlex
 
+import numpy as np
 from matplotlib import pyplot as plt
 
 def plot_eval(cmd, fmt):
@@ -18,18 +19,26 @@ def plot_eval(cmd, fmt):
     print(raw)
     data = json.loads(raw)
 
-    X = [elem['step_cnt'] for elem in data['multi-level']]
+    step_cnt = [elem['step_cnt'] for elem in data['multi-level']]
+    variance = [elem['stats']['variance'] for elem in data['multi-level']]
 
-    Y = [elem['stats']['variance'] for elem in data['multi-level']]
-    Y_err = [elem['var_sigma'] for elem in data['multi-level']]
+    effort = []
+    for cnt, var in zip(step_cnt, variance):
+        effort.append(cnt * var) #TODO(brugger): weighting factor for ml levels
+    effort = np.array(effort)
+    effort = effort / np.max(effort)
 
-    plt.errorbar(X, Y, yerr=Y_err, fmt=fmt)
+    plt.subplot(211)
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.plot(step_cnt, variance, fmt)
+
+    plt.subplot(212)
+    plt.xscale('log')
+    plt.plot(step_cnt, effort, fmt)# range(len(step_cnt)))
 
 
-plt.yscale('log')
-plt.xscale('log')
-
-for _ in range(3):
+for _ in range(2):
     plot_eval("bin/eval_heston.exe -ml parameters/p1.json", 'bo-')
     plot_eval("bin/eval_heston.exe -ml parameters/p2.json", 'go-')
 
