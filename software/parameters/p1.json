@@ -26,10 +26,10 @@
 	},
 	"simulation_eval": {
 		"start_level": 0,
-		"stop_level": 16,
-		"ml_start_level": 0,
-		"ml_constant": 2,
-		"path_cnt": 1000
+		"stop_level": 4,
+		"ml_start_level": 1,
+		"ml_constant": 4,
+		"path_cnt": 1000000
 	},
 	"reference": {
 		"price": 0.74870,

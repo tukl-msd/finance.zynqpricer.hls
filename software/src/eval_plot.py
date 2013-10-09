@@ -11,7 +11,7 @@ import subprocess
 import json
 import shlex
 import platform
-from math import sqrt
+import math
 
 import numpy as np
 import matplotlib
@@ -30,7 +30,10 @@ else:
     raise Exception("Unknown platform: " + platform.system())
 
 
-def plot_eval(cmd, params, fmt):
+def plot_eval(cmd, params, index):
+    colors = "bgrcmykw"
+    color = colors[math.floor(index) % len(colors)]
+
     ml_start_level = params['simulation_eval']['ml_start_level']
     ml_constant = params['simulation_eval']['ml_constant']
 
@@ -42,38 +45,49 @@ def plot_eval(cmd, params, fmt):
     step_cnts = [elem['step_cnt'] for elem in data['multi-level']]
     variances = [elem['stats']['variance'] for elem in data['multi-level']]
 
-    opt_n = np.array([sqrt(variances[l]/step_cnts[l])
-                for l in range(len(variances))]) * \
-            sum(sqrt(variances[l]*step_cnts[l]) 
-                for l in range(len(variances)))
+    last_correction = abs(data['multi-level'][-1]['stats']['mean'])
+    sigma_cnt = last_correction / data['multi-level'][-1]['sigma']
+    if sigma_cnt < 2:
+        print("WARNING: need more samples for " + cmd)
+    epsillon = last_correction
+    last_sl_variance = 0
+    path_cnt_sl = math.sqrt(2) * last_sl_variance
 
     efforts = []
-    for l, time_step_cnt in enumerate(step_cnts):
+    for time_step_cnt, variance in zip(step_cnts, variances):
         do_singlelevel = (time_step_cnt == ml_constant**ml_start_level)
         weight = 1 if do_singlelevel else (1 + 1/ml_constant)
-        efforts.append(opt_n[l] * time_step_cnt * weight)
+        opt_path_cnt = math.sqrt(variance/time_step_cnt)
+        efforts.append(opt_path_cnt * time_step_cnt * weight)
     efforts = np.array(efforts)
     efforts = efforts / np.max(efforts)
 
-    plt.subplot(211)
+    plt.subplot(221)
     plt.yscale('log')
     plt.xscale('log')
-    plt.plot(step_cnts, variances, fmt)
+    plt.plot(step_cnts, variances, color + 'o-')
 
-    plt.subplot(212)
+    plt.subplot(223)
     plt.xscale('log')
-    plt.plot(step_cnts, efforts, fmt)
+    plt.plot(step_cnts, efforts, color + 'o-')
+
+    plt.subplot(224)
+    last_effort = 0
+    for effort in efforts:
+        plt.bar(index, effort, bottom=last_effort, align='center',
+                width=0.35)
+        last_effort += effort
 
 
-for _ in range(2):
+
+for i in range(2):
     params_paths = sys.argv[1:]
     if len(params_paths) == 0:
         raise Exception("Provide params.json files as arguments.")
 
-    colors = "bgrcmykw"
-    for p_path, color in zip(params_paths, colors):
+    for index, p_path in enumerate(params_paths):
         with open(p_path, encoding='utf-8') as f:
             params = json.loads(f.read())
-        plot_eval("{} -ml {}".format(exe_path, p_path), params, color + 'o-')
+        plot_eval("{} -both {}".format(exe_path, p_path), params, index+0.5*i)
 
 plt.show()

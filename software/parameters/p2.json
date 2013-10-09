@@ -12,7 +12,7 @@
 	},
 	"barrier values": {
 		"lower": 1,
-		"upper": 500
+		"upper": 150
 	},
 	"simulation_sl": {
 		"step_cnt": 500,
@@ -26,10 +26,10 @@
 	},
 	"simulation_eval": {
 		"start_level": 0,
-		"stop_level": 12,
-		"ml_start_level": 0,
-		"ml_constant": 2,
-		"path_cnt": 100000
+		"stop_level": 4,
+		"ml_start_level": 1,
+		"ml_constant": 4,
+		"path_cnt": 1000000
 	},
 	"reference": {
 		"price": 0.74870,
