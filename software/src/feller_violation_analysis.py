@@ -50,7 +50,7 @@ with open(os.path.join(foldername, 'seed'), 'w') as f:
 initial_sample_cnt = 100000
 fvf_min = 0.25 # feller violation factor minimum
 fvf_max = 100 # feller violation factor maximum
-bin_cnt = 4
+bin_cnt = 100
 
 
 class Sample:
@@ -76,7 +76,7 @@ while True:
         if math.log(sample.get_feller_violation_factor()) > next_bin:
             binned_samples.append(sample)
             next_bin += bin_size
-    random.shuffle(binned_samples)
+    #random.shuffle(binned_samples)
     if len(binned_samples) == bin_cnt:
         break
     else:
@@ -125,7 +125,7 @@ for i, sample in enumerate(binned_samples):
 		    "stop_level": 7,
 		    "ml_start_level": 1,
 		    "ml_constant": 4,
-		    "path_cnt": 1000
+		    "path_cnt": 100000
 	    }
     }
 
@@ -189,6 +189,6 @@ plt.ylabel('Slope of Multi-Level Variance')
 plt.legend(prop={'size':10})
 plt.savefig(os.path.join(foldername, 'output.png'))
 plt.clf()
-    
+
 #TODO(brugger): asian option
 
