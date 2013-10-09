@@ -142,7 +142,7 @@ for i, sample in enumerate(binned_samples):
 
         res_path = '{}.{:010d}.out'.format(p_path, j)
         with open(res_path, 'w') as f:
-            json.dump(params, f, indent='  ')
+            json.dump(data, f, indent='  ')
         
         step_cnts = [elem['step_cnt'] for elem in data['multi-level']]
         variances = [elem['stats']['variance'] for elem in data['multi-level']]
