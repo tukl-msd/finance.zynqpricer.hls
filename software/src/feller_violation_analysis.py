@@ -130,19 +130,18 @@ for i, sample in enumerate(binned_samples):
     }
 
     with open(p_path, 'w') as f:
-        json.dump(params, f, indent='  ')
+        json.dump(params, f, indent='\t')
 
     cmd = "{} -ml {}".format(exe_path, p_path)
 
     for j in range(3):
-        raw = subprocess.check_output(
-                shlex.split(cmd, posix=is_posix)).decode("utf-8")
-        print(raw)
-        data = json.loads(raw)
+        raw = subprocess.check_output(shlex.split(cmd, posix=is_posix))
+        print(raw.decode("utf-8"))
+        data = json.loads(raw.decode("utf-8"))
 
         res_path = '{}.{:010d}.out'.format(p_path, j)
-        with open(res_path, 'w') as f:
-            json.dump(data, f, indent='  ')
+        with open(res_path, 'wb') as f:
+            f.write(raw)
         
         step_cnts = [elem['step_cnt'] for elem in data['multi-level']]
         variances = [elem['stats']['variance'] for elem in data['multi-level']]
@@ -185,8 +184,9 @@ for d, color, label in zip([d_long, d_short], 'rb',
 plt.xscale('log')
 plt.xlabel('Feller Condition Violation Factor')
 plt.ylabel('Slope of Multi-Level Variance')
-#plt.title('')
+plt.title('Feller Violation Analysis with Prediction')
 plt.legend(prop={'size':10})
+plt.xlim(0.25, 100)
 plt.savefig(os.path.join(foldername, 'output.png'))
 plt.clf()
 

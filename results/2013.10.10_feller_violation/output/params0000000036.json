@@ -1,0 +1,24 @@
+{
+	"heston": {
+		"reversion_rate": 4.691596712938637, 
+		"time_to_maturity": 0.7679902049239128, 
+		"strike_price": 1, 
+		"spot_price": 1, 
+		"vol_of_vol": 6.670529812943973, 
+		"vola_0": 4.943645774029147, 
+		"correlation": -0.2944736553266185, 
+		"long_term_avg_vola": 2.1941547754569974, 
+		"riskless_rate": 0.23758204132261018
+	}, 
+	"barrier values": {
+		"lower": 1e-10, 
+		"upper": 1e+100
+	}, 
+	"simulation_eval": {
+		"path_cnt": 100000, 
+		"stop_level": 7, 
+		"start_level": 4, 
+		"ml_start_level": 1, 
+		"ml_constant": 4
+	}
+}
