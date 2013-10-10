@@ -110,11 +110,11 @@ for i, sample in enumerate(binned_samples):
 		    "reversion_rate": sample.reversion_rate,
 		    "long_term_avg_vola": sample.long_term_avg_vola,
 		    "vol_of_vol": sample.vol_of_vol,
-		    "riskless_rate": np.random.uniform(0, 0.25),
-		    "vola_0": np.random.uniform(0.0001, 10.),
+		    "riskless_rate": np.random.uniform(0., 0.05),
+		    "vola_0": np.random.uniform(0.001, 10.),
 		    "correlation": np.random.uniform(-1., 1.),
-		    "time_to_maturity": np.random.uniform(0.1, 10.), # impact ???
-		    "strike_price": 1 # impact ????
+		    "time_to_maturity": 1., # impact ???
+		    "strike_price": 1. # impact ????
 	    },
 	    "barrier values": {
 		    "lower": 1E-10, # should be disabled
