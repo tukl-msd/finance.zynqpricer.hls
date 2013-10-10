@@ -16,7 +16,7 @@
 	},
 	"simulation_sl": {
 		"step_cnt": 500,
-		"path_cnt": 100000
+		"path_cnt": 400000
 	},
 	"simulation_ml": {
 		"start_level": 1,
@@ -26,10 +26,10 @@
 	},
 	"simulation_eval": {
 		"start_level": 0,
-		"stop_level": 4,
+		"stop_level": 3,
 		"ml_start_level": 1,
 		"ml_constant": 4,
-		"path_cnt": 1000000
+		"path_cnt": 40000000
 	},
 	"reference": {
 		"price": 0.74870,

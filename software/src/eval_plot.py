@@ -24,7 +24,7 @@ if platform.system() == "Windows":
     exe_path = "bin/eval_heston.exe"
     is_posix = False
 elif platform.system() == "Linux":
-    exe_path = "bin/eval_heston"
+    exe_path = "mpirun -n 32 bin/eval_heston"
     is_posix = True
 else:
     raise Exception("Unknown platform: " + platform.system())
@@ -47,20 +47,32 @@ def plot_eval(cmd, params, index):
 
     last_correction = abs(data['multi-level'][-1]['stats']['mean'])
     sigma_cnt = last_correction / data['multi-level'][-1]['sigma']
-    if sigma_cnt < 2:
+    if sigma_cnt < 6:
         print("WARNING: need more samples for " + cmd)
-    epsillon = last_correction
-    last_sl_variance = 0
-    path_cnt_sl = math.sqrt(2) * last_sl_variance
+    print("INFO: need at least {} samples".format(
+            6**2 * variances[-1] / last_correction**2))
+    epsilon = last_correction
+    last_sl_variance = data['single-level'][-1]['stats']['variance']
+    opt_path_cnt_sl = 2 * last_sl_variance / epsilon**2
+    sl_effort = step_cnts[-1] * opt_path_cnt_sl
+    print("opt path_cnt single-level = {}, for epsilon {} ".format(
+            opt_path_cnt_sl, epsilon))
 
     efforts = []
     for time_step_cnt, variance in zip(step_cnts, variances):
         do_singlelevel = (time_step_cnt == ml_constant**ml_start_level)
         weight = 1 if do_singlelevel else (1 + 1/ml_constant)
-        opt_path_cnt = math.sqrt(variance/time_step_cnt)
+        opt_path_cnt = 2 / epsilon**2 * math.sqrt(variance/time_step_cnt) * \
+                sum(math.sqrt(variances[l] * step_cnts[l])
+                for l in range(len(variances)))
         efforts.append(opt_path_cnt * time_step_cnt * weight)
     efforts = np.array(efforts)
-    efforts = efforts / np.max(efforts)
+    efforts_normalized = efforts / np.max(efforts)
+    ml_effort = sum(efforts)
+
+    print("single-level effort: {}".format(sl_effort))
+    print("multi-level effort : {}".format(ml_effort))
+    print("multi-level speedup: {}".format(sl_effort / ml_effort))
 
     plt.subplot(221)
     plt.yscale('log')
@@ -69,7 +81,7 @@ def plot_eval(cmd, params, index):
 
     plt.subplot(223)
     plt.xscale('log')
-    plt.plot(step_cnts, efforts, color + 'o-')
+    plt.plot(step_cnts, efforts_normalized, color + 'o-')
 
     plt.subplot(224)
     last_effort = 0
