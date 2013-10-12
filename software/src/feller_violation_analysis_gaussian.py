@@ -46,6 +46,10 @@ d_long = {}
 d_short = {}
 
 sample_params = {}
+sample_result = {}
+
+
+##############################################################################
 
 print("Reading Inputs")
 
@@ -63,12 +67,20 @@ for filename in sorted(os.listdir(foldername)):
         i, j = map(int, filename.strip('params').strip('.out').split('.json.'))
         with open(file_path) as f:
             data = json.load(f)
+        sample_result.setdefault(i, {})[j] = data
 
+##############################################################################
+
+print("Generating individual graphs")
+
+for i, results in sample_result.items():
+    p_path = os.path.join(foldername, 'params{:010d}.json'.format(i))
+    for j, data in results.items():
         params = sample_params[i]
         sample = Sample(params['heston']['reversion_rate'], 
                 params['heston']['long_term_avg_vola'], 
                 params['heston']['vol_of_vol'])
-        
+
         step_cnts = [elem['step_cnt'] for elem in data['multi-level']]
         variances = [elem['stats']['variance'] for elem in data['multi-level']]
         log_step_cnt = np.log(step_cnts)
@@ -79,14 +91,27 @@ for filename in sorted(os.listdir(foldername)):
         short_slope = scipy.stats.linregress(log_step_cnt[1:],
                 log_variances[1:])[0]
 
-        #print(long_slope, short_slope)
+        print(long_slope, short_slope)
         d_long.setdefault(sample.get_feller_violation_factor(), []).\
                 append(long_slope)
         d_short.setdefault(sample.get_feller_violation_factor(), []).\
                 append(short_slope)
 
+        label = 'all shown = {:.3f}\nall except the first = {:.3f}'.format(
+                long_slope, short_slope)
+        plt.plot(step_cnts, variances, 'o-', label=label)
 
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlabel('Time Step Count')
+    plt.ylabel('Multi-Level Variance')
+    plt.title('Feller Condition Violation Factor = {}'.format(
+            sample.get_feller_violation_factor()))
+    plt.legend(prop={'size':10})
+    plt.savefig(p_path + '.png')
+    plt.clf()
 
+##############################################################################
 
 for d, title_info in zip([d_long, d_short],
         ['all_variances', 'all_except_first']):
@@ -127,8 +152,8 @@ for d, title_info in zip([d_long, d_short],
     # Fit to data using Maximum Likelihood Estimation of the parameters
     gp.fit(X, Y)
 
-    # Mesh the input space for evaluations of the real function, the prediction and
-    # its MSE
+    # Mesh the input space for evaluations of the real function, the 
+    # prediction and its MSE
     x = np.atleast_2d(np.linspace(0.25, 100, 1000)).T
 
     # Make the prediction on the meshed x-axis (ask for MSE as well)
@@ -161,3 +186,4 @@ for d, title_info in zip([d_long, d_short],
 
 #TODO(brugger): asian option
 print('done')
+

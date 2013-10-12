@@ -8,9 +8,9 @@ Christian Brugger (brugger@eit.uni-kl.de)
 
 
 ### KEY PARAMETERS ###
-bin_cnt = 1
-path_cnt = 1000
-regression_cnt = 1
+bin_cnt = 4
+path_cnt = 100000
+regression_cnt = 3
 ######################
 
 import math
