@@ -114,16 +114,7 @@ with open(os.path.join(output_folder, 'submit.sh'), 'w') as f_sub:
             mean = np.mean(vars)
             rmse = np.sqrt(np.var(vars, ddof=1))
             req_repetitions = (rmse / rmse_goal)**2
-            if rmse <= rmse_goal:
-                print("+ goal reached", i, rmse)
-                # copy files to result folder
-                shutil.copyfile(os.path.join(input_folder, params_name),
-                        os.path.join(output_folder, params_name))
-                for j in d:
-                    res_name = '{}.{:010d}.out'.format(params_name, j)
-                    shutil.copyfile(os.path.join(input_folder, res_name),
-                            os.path.join(output_folder, res_name))
-            elif req_repetitions <= repetition_limit:
+            if 1 < req_repetitions <= repetition_limit:
                 last_path_cnt = params["simulation_eval"]["path_cnt"]
                 last_level = params["simulation_eval"]["stop_level"] + \
                         params["simulation_eval"]["ml_start_level"]
@@ -152,7 +143,17 @@ with open(os.path.join(output_folder, 'submit.sh'), 'w') as f_sub:
                     f_sub.write(submit_cmd + "\n")
                     total_job_cnt += parallelism
             else:
-                print("  rmse to high:", i, rmse, req_repetitions)
+                if rmse <= rmse_goal:
+                    print("+ goal reached", i, rmse)
+                else:
+                    print("  rmse to high:", i, rmse, req_repetitions)
+                # copy files to result folder
+                shutil.copyfile(os.path.join(input_folder, params_name),
+                        os.path.join(output_folder, params_name))
+                for j in d:
+                    res_name = '{}.{:010d}.out'.format(params_name, j)
+                    shutil.copyfile(os.path.join(input_folder, res_name),
+                            os.path.join(output_folder, res_name))
             break
 
     print(total_job_cnt)

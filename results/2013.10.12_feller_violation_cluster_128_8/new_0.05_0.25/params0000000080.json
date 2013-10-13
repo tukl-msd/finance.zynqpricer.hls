@@ -1,0 +1,25 @@
+{
+	"simulation_eval": {
+		"stop_level": 7, 
+		"start_level": 4, 
+		"ml_constant": 4, 
+		"path_cnt": 5000000, 
+		"ml_start_level": 1
+	}, 
+	"barrier values": {
+		"upper": 1e+100, 
+		"lower": 1e-10
+	}, 
+	"heston": {
+		"vol_of_vol": 7.60962620175314, 
+		"time_to_maturity": 1.0, 
+		"correlation": -0.8971680007902776, 
+		"feller-violation-factor": 10.575129872191297, 
+		"spot_price": 1, 
+		"reversion_rate": 0.8172861392651009, 
+		"long_term_avg_vola": 3.3499383073175046, 
+		"riskless_rate": 0.011848902070350626, 
+		"vola_0": 2.0250449712972474, 
+		"strike_price": 1.0
+	}
+}
