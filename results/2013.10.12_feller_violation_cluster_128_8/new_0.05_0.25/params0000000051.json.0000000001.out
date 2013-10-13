@@ -1,0 +1,5 @@
+{
+  "multi-level": [
+    {"step_cnt": 1024, "stats": {"mean": -0.00134515, "variance": 177.484, "cnt": 125067575}, "duration": 65.3078, "sigma": 0.00119126, "var_sigma": 0.0224441}, 
+    {"step_cnt": 4096, "stats": {"mean": -6.55399e-05, "variance": 7.17564, "cnt": 125067575}, "duration": 260.623, "sigma": 0.000239529, "var_sigma": 0.000907409}, 
+    {"step_cnt": 16384, "stats": {"mean": 0.00067796, "variance": 18.6179, "cnt": 125067575}, "duration": 1042.12, "sigma": 0.000385827, "var_sigma": 0.00235436}8 total processes killed (some possibly by mpirun during cleanup)
