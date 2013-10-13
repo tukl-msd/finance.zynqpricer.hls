@@ -75,6 +75,9 @@ print("Generating individual graphs")
 
 for i, results in sample_result.items():
     p_path = os.path.join(foldername, 'params{:010d}.json'.format(i))
+    png_path = p_path + '.png'
+    do_gen_png = not os.path.isfile(png_path)
+    
     for j, data in results.items():
         params = sample_params[i]
         sample = Sample(params['heston']['reversion_rate'], 
@@ -97,92 +100,99 @@ for i, results in sample_result.items():
         d_short.setdefault(sample.get_feller_violation_factor(), []).\
                 append(short_slope)
 
-        label = 'all shown = {:.3f}\nall except the first = {:.3f}'.format(
-                long_slope, short_slope)
-        plt.plot(step_cnts, variances, 'o-', label=label)
+        if do_gen_png:
+            label = 'all shown = {:.3f}\nall except the first = {:.3f}'.format(
+                    long_slope, short_slope)
+            plt.plot(step_cnts, variances, 'o-', label=label)
 
-    plt.yscale('log')
-    plt.xscale('log')
-    plt.xlabel('Time Step Count')
-    plt.ylabel('Multi-Level Variance')
-    plt.title('Feller Condition Violation Factor = {}'.format(
-            sample.get_feller_violation_factor()))
-    plt.legend(prop={'size':10})
-    plt.savefig(p_path + '.png')
-    plt.clf()
+    if do_gen_png:
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.xlabel('Time Step Count')
+        plt.ylabel('Multi-Level Variance')
+        plt.title('Feller Condition Violation Factor = {}'.format(
+                sample.get_feller_violation_factor()))
+        plt.legend(prop={'size':10})
+        plt.savefig(png_path)
+        plt.clf()
 
 ##############################################################################
+for cutoff in np.arange(0., 1., 0.05):
+    for d, title_info in zip([d_long, d_short],
+            ['all_variances', 'all_except_first']):
+        print("Gaussian Fit:", title_info)
 
-for d, title_info in zip([d_long, d_short],
-        ['all_variances', 'all_except_first']):
-    print("Gaussian Fit:", title_info)
+        X_list = []
+        Y = []
+        Y_err = []
 
-    X_list = []
-    Y = []
-    Y_err = []
+        label = 'Observations'
+        label_err = 'Mean and Variance of Observations'
+        for k, v in d.items():
+            x = [k] * len(v)
+            mean = np.mean(v)
+            rmse = np.sqrt(np.var(v, ddof=1))
+            if rmse > cutoff > 0:
+                continue
 
-    label = 'Observations'
-    label_err = 'Mean and Variance of Observations'
-    for k, v in d.items():
-        x = [k] * len(v)
-        mean = np.mean(v)
-        rmse = np.sqrt(np.var(v, ddof=1))
-
-        X_list.append(k)
-        Y.append(mean)
-        Y_err.append(rmse)
+            X_list.append(k)
+            Y.append(mean)
+            Y_err.append(rmse)
 
         
-        plt.errorbar(k, mean, rmse, fmt='ro', label=label_err)
-        plt.plot(x, v, 'rx', label=label)
-        label = None
-        label_err = None
+            plt.errorbar(k, mean, rmse, fmt='ro', label=label_err)
+            plt.plot(x, v, 'rx', label=label)
+            label = None
+            label_err = None
 
-    #####
+        #####
 
-    X = np.array([X_list]).T
+        do_prediction = False
 
-    # Instanciate a Gaussian Process model
-    gp = sklearn.gaussian_process.GaussianProcess(
-            corr='squared_exponential', 
-            theta0=1e-1, thetaL=1e-3, thetaU=1,
-            nugget = (np.array(Y_err) / np.array(Y))**2, #nugget=(dy / y) ** 2,
-            random_start=100)
+        if do_prediction:
+            X = np.array([X_list]).T
 
-    # Fit to data using Maximum Likelihood Estimation of the parameters
-    gp.fit(X, Y)
+            # Instanciate a Gaussian Process model
+            gp = sklearn.gaussian_process.GaussianProcess(
+                    corr='squared_exponential', 
+                    theta0=1e-1, thetaL=1e-3, thetaU=1,
+                    nugget = (np.array(Y_err) / np.array(Y))**2, #nugget=(dy / y) ** 2,
+                    random_start=100)
 
-    # Mesh the input space for evaluations of the real function, the 
-    # prediction and its MSE
-    x = np.atleast_2d(np.linspace(0.25, 100, 1000)).T
+            # Fit to data using Maximum Likelihood Estimation of the parameters
+            gp.fit(X, Y)
 
-    # Make the prediction on the meshed x-axis (ask for MSE as well)
-    y_pred, MSE = gp.predict(x, eval_MSE=True)
-    sigma = np.sqrt(MSE)
+            # Mesh the input space for evaluations of the real function, the 
+            # prediction and its MSE
+            x = np.atleast_2d(np.linspace(0.25, 100, 1000)).T
 
-    plt.xscale('log')
-    plt.plot(x, y_pred, 'b-', label=u'Prediction (Gaussian process)')
-    plt.fill(np.concatenate([x, x[::-1]]),
-            np.concatenate([y_pred - 1.9600 * sigma,
-                           (y_pred + 1.9600 * sigma)[::-1]]),
-            alpha=.5, fc='b', ec='None', label='95% confidence interval')
-    plt.xlabel('Feller Condition Violation Factor')
-    plt.ylabel('Slope of Multi-Level Variance')
-    plt.xlim(0.25, 100)
-    plt.ylim(-4, 3)
+            # Make the prediction on the meshed x-axis (ask for MSE as well)
+            y_pred, MSE = gp.predict(x, eval_MSE=True)
+            sigma = np.sqrt(MSE)
 
-    #plt.plot([1, 1], [-4, 4], 'k-', lw=1)
-    plt.fill_between([0.25, 1], [4, 4], -4, facecolor='green', alpha=0.1)
-    plt.fill_between([1, 100], [4, 4], -4, facecolor='red', alpha=0.1)
+            plt.plot(x, y_pred, 'b-', label=u'Prediction (Gaussian process)')
+            plt.fill(np.concatenate([x, x[::-1]]),
+                    np.concatenate([y_pred - 1.9600 * sigma,
+                                   (y_pred + 1.9600 * sigma)[::-1]]),
+                    alpha=.5, fc='b', ec='None', label='95% confidence interval')
+        plt.xscale('log')
+        plt.xlabel('Feller Condition Violation Factor')
+        plt.ylabel('Slope of Multi-Level Variance')
+        plt.xlim(0.25, 100)
+        plt.ylim(-2, 1)
 
-    plt.grid(True)
-    plt.legend(loc=4, fontsize='small', numpoints=1)
-    plt.title('Feller Violation Analysis with Prediction ({})'\
-            .format(title_info))
-    plt.savefig(os.path.join(foldername, 
-            'output_prediction_{}.png'.format(title_info)))
-    #plt.show()
-    plt.clf()
+        #plt.plot([1, 1], [-4, 4], 'k-', lw=1)
+        plt.fill_between([0.25, 1], [4, 4], -4, facecolor='green', alpha=0.1)
+        plt.fill_between([1, 100], [4, 4], -4, facecolor='red', alpha=0.1)
+
+        plt.grid(True)
+        plt.legend(loc=4, fontsize='small', numpoints=1)
+        plt.title('Feller Violation Analysis with Prediction ({})'\
+                .format(title_info))
+        plt.savefig(os.path.join(foldername, 
+                'output_prediction_{}_{:.2f}.png'.format(title_info, cutoff)))
+        #plt.show()
+        plt.clf()
 
 #TODO(brugger): asian option
 print('done')
