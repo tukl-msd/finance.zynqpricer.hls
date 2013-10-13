@@ -1,7 +1,5 @@
 set -e
 
-cd ../../software
-
 bsub -q short -a openmpi -W 1:30 -n 17 -R "select[model==XEON_E5_2670]" -R "rusage[mem=2048]" -o new_0.05_0.25/params0000000002.json.0000000000.out -e new_0.05_0.25/params0000000002.json.0000000000.out.err mpirun zynq/software/bin/eval_heston -ml new_0.05_0.25/params0000000002.json
 bsub -q short -a openmpi -W 1:30 -n 17 -R "select[model==XEON_E5_2670]" -R "rusage[mem=2048]" -o new_0.05_0.25/params0000000002.json.0000000001.out -e new_0.05_0.25/params0000000002.json.0000000001.out.err mpirun zynq/software/bin/eval_heston -ml new_0.05_0.25/params0000000002.json
 bsub -q short -a openmpi -W 1:30 -n 2 -R "select[model==XEON_E5_2670]" -R "rusage[mem=2048]" -o new_0.05_0.25/params0000000007.json.0000000000.out -e new_0.05_0.25/params0000000007.json.0000000000.out.err mpirun zynq/software/bin/eval_heston -ml new_0.05_0.25/params0000000007.json

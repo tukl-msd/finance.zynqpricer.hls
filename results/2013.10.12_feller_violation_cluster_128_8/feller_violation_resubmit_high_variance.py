@@ -79,7 +79,6 @@ print("Calculating new jobs")
 
 with open(os.path.join(output_folder, 'submit.sh'), 'w') as f_sub:
     f_sub.write("set -e\n\n")
-    f_sub.write("cd ../../software\n\n")
 
     total_job_cnt = 0
 
