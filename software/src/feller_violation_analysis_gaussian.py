@@ -65,9 +65,13 @@ for filename in sorted(os.listdir(foldername)):
     elif filename.endswith('.out'):
         # params0000000001.json.0000000000.out
         i, j = map(int, filename.strip('params').strip('.out').split('.json.'))
-        with open(file_path) as f:
-            data = json.load(f)
-        sample_result.setdefault(i, {})[j] = data
+        try:
+            with open(file_path) as f:
+                data = json.load(f)
+        except ValueError:
+            print("Ignoring file: ", filename)
+        else:
+            sample_result.setdefault(i, {})[j] = data
 
 ##############################################################################
 
