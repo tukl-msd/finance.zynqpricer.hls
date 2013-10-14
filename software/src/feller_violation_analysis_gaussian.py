@@ -19,7 +19,7 @@ import numpy as np
 import scipy.stats
 import sklearn.gaussian_process
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 

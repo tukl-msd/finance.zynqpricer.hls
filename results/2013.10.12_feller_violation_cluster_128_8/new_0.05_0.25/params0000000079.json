@@ -1,25 +1,25 @@
 {
 	"heston": {
-		"feller-violation-factor": 10.093171860748319, 
-		"reversion_rate": 6.621916889711877, 
-		"vol_of_vol": 6.7210299393447155, 
-		"spot_price": 1, 
 		"long_term_avg_vola": 0.33793274058482986, 
-		"strike_price": 1.0, 
-		"time_to_maturity": 1.0, 
-		"vola_0": 2.46634401634431, 
+		"reversion_rate": 6.621916889711877, 
+		"riskless_rate": 0.03334728874946344, 
 		"correlation": 0.7837547933663123, 
-		"riskless_rate": 0.03334728874946344
+		"time_to_maturity": 1.0, 
+		"feller-violation-factor": 10.093171860748319, 
+		"strike_price": 1.0, 
+		"vol_of_vol": 6.7210299393447155, 
+		"vola_0": 2.46634401634431, 
+		"spot_price": 1
 	}, 
 	"barrier values": {
 		"lower": 1e-10, 
 		"upper": 1e+100
 	}, 
 	"simulation_eval": {
-		"stop_level": 7, 
-		"path_cnt": 15008109, 
 		"ml_start_level": 1, 
+		"start_level": 4, 
 		"ml_constant": 4, 
-		"start_level": 4
+		"stop_level": 7, 
+		"path_cnt": 18957612
 	}
 }
