@@ -160,7 +160,8 @@ for cutoff in np.arange(0., 1., 0.05):
             gp = sklearn.gaussian_process.GaussianProcess(
                     corr='squared_exponential', 
                     theta0=1e-1, thetaL=1e-3, thetaU=1,
-                    nugget = (np.array(Y_err) / np.array(Y))**2, #nugget=(dy / y) ** 2,
+                    #nugget=(dy / y) ** 2,
+                    nugget = (np.array(Y_err) / np.array(Y))**2, 
                     random_start=100)
 
             # Fit to data using Maximum Likelihood Estimation of the parameters
@@ -178,7 +179,8 @@ for cutoff in np.arange(0., 1., 0.05):
             plt.fill(np.concatenate([x, x[::-1]]),
                     np.concatenate([y_pred - 1.9600 * sigma,
                                    (y_pred + 1.9600 * sigma)[::-1]]),
-                    alpha=.5, fc='b', ec='None', label='95% confidence interval')
+                    alpha=.5, fc='b', ec='None', 
+                    label='95% confidence interval')
         plt.xscale('log')
         plt.xlabel('Feller Condition Violation Factor')
         plt.ylabel('Slope of Multi-Level Variance')
@@ -191,8 +193,7 @@ for cutoff in np.arange(0., 1., 0.05):
 
         plt.grid(True)
         plt.legend(loc=4, fontsize='small', numpoints=1)
-        plt.title('Feller Violation Analysis with Prediction ({})'\
-                .format(title_info))
+        plt.title('Feller Violation Analysis')
         plt.savefig(os.path.join(foldername, 
                 'output_prediction_{}_{:.2f}.png'.format(title_info, cutoff)))
         #plt.show()
