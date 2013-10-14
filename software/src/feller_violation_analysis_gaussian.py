@@ -21,6 +21,7 @@ import sklearn.gaussian_process
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 if len(sys.argv) != 2:
@@ -121,9 +122,13 @@ for i, results in sample_result.items():
         plt.clf()
 
 ##############################################################################
-for cutoff in np.arange(0., 1., 0.05):
-    for d, title_info in zip([d_long, d_short],
-            ['all_variances', 'all_except_first']):
+
+
+for d, title_info in zip([d_long, d_short],
+        ['all_variances', 'all_except_first']):
+    pp = PdfPages(os.path.join(foldername, 
+            'output_prediction_{}.pdf'.format(title_info)))
+    for cutoff in np.arange(0., 1., 0.05):
         print("Gaussian Fit:", title_info)
 
         X_list = []
@@ -185,7 +190,7 @@ for cutoff in np.arange(0., 1., 0.05):
         plt.xlabel('Feller Condition Violation Factor')
         plt.ylabel('Slope of Multi-Level Variance')
         plt.xlim(0.25, 100)
-        plt.ylim(-2, 1)
+        plt.ylim(-1.5, 0.5)
 
         #plt.plot([1, 1], [-4, 4], 'k-', lw=1)
         plt.fill_between([0.25, 1], [4, 4], -4, facecolor='green', alpha=0.1)
@@ -194,10 +199,15 @@ for cutoff in np.arange(0., 1., 0.05):
         plt.grid(True)
         plt.legend(loc=4, fontsize='small', numpoints=1)
         plt.title('Feller Violation Analysis')
-        plt.savefig(os.path.join(foldername, 
-                'output_prediction_{}_{:.2f}.png'.format(title_info, cutoff)))
+        #plt.savefig(os.path.join(foldername, 
+        #        'output_prediction_{}_{:.2f}.pdf'.format(title_info, cutoff)))
+        plt.savefig(pp, format='pdf')
         #plt.show()
         plt.clf()
+
+    pp.savefig()
+    pp.close()
+
 
 #TODO(brugger): asian option
 print('done')
