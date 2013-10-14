@@ -119,7 +119,7 @@ with open(os.path.join(output_folder, 'submit.sh'), 'w') as f_sub:
                         params["simulation_eval"]["ml_start_level"]
                 new_path_cnt = int(math.ceil(last_path_cnt * req_repetitions))
                 new_time = 4**(last_level) * 1.33 * new_path_cnt / (0.85E8)
-                parallelism_real = new_time / (90 * 60 * 0.95)
+                parallelism_real = new_time / (90 * 60 * 0.90)
                 parallelism = int(math.ceil(parallelism_real))
                 new_path_cnt = int(math.ceil(new_path_cnt * 
                         parallelism / parallelism_real))
@@ -131,6 +131,7 @@ with open(os.path.join(output_folder, 'submit.sh'), 'w') as f_sub:
                 with open(params_path, 'w') as f:
                     json.dump(new_params, f, indent='\t')
                 for j in range(regression_cnt):
+                    j += 2
                     res_path = '{}.{:010d}.out'.format(params_path, j)
                     exe_path = "zynq/software/bin/eval_heston"
                     eval_cmd = "{} -ml {}".format(exe_path, params_path)

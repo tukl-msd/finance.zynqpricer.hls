@@ -1,0 +1,4 @@
+mpirun: Forwarding signal 12 to job
+--------------------------------------------------------------------------
+mpirun noticed that process rank 14 with PID 10330 on node node210 exited on signal 12 (User defined signal 2).
+--------------------------------------------------------------------------
