@@ -135,7 +135,6 @@ for d, title_info in zip([d_long, d_short],
             'output_prediction_{}.pdf'.format(title_info)))
     data[title_info] = {}
     for cutoff in np.arange(0., 1., 0.05):
-        data[title_info][cutoff] = {}
 
         print("Gaussian Fit:", title_info)
 
@@ -164,9 +163,7 @@ for d, title_info in zip([d_long, d_short],
 
         #####
 
-        data[title_info][cutoff]['X'] = X_list
-        data[title_info][cutoff]['Y'] = Y
-        data[title_info][cutoff]['Y_err'] = Y_err
+        data[title_info][str(cutoff)] = {'X': X_list, 'Y': Y, 'Y_err': Y_err}
 
         do_prediction = False
 
