@@ -56,7 +56,9 @@ print("Reading Inputs")
 
 for filename in sorted(os.listdir(foldername)):
     file_path = os.path.join(foldername, filename)
-    
+    if not filename.startswith('params'):
+        continue
+
     if filename.endswith('.json'):
         # params0000000001.json
         i = int(filename.strip('params').strip('.json'))
@@ -123,12 +125,18 @@ for i, results in sample_result.items():
 
 ##############################################################################
 
+print("writing threshold plots")
+
+data = {}
 
 for d, title_info in zip([d_long, d_short],
         ['all_variances', 'all_except_first']):
     pp = PdfPages(os.path.join(foldername, 
             'output_prediction_{}.pdf'.format(title_info)))
+    data[title_info] = {}
     for cutoff in np.arange(0., 1., 0.05):
+        data[title_info][cutoff] = {}
+
         print("Gaussian Fit:", title_info)
 
         X_list = []
@@ -155,6 +163,10 @@ for d, title_info in zip([d_long, d_short],
             label_err = None
 
         #####
+
+        data[title_info][cutoff]['X'] = X_list
+        data[title_info][cutoff]['Y'] = Y
+        data[title_info][cutoff]['Y_err'] = Y_err
 
         do_prediction = False
 
@@ -208,6 +220,9 @@ for d, title_info in zip([d_long, d_short],
     pp.savefig()
     pp.close()
 
+with open(os.path.join(foldername, 
+             'output_prediction_data.json'.format(title_info)), 'w') as f:
+    json.dump(data, f, indent='\t')
 
 #TODO(brugger): asian option
 print('done')
