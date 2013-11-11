@@ -31,11 +31,13 @@ add_library(iodev STATIC ${SOURCE} ${HEADERS})
 set(HEADERS
 		heston_common.hpp
 		heston_ml_both.hpp
+		observer.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
 		heston_common.cpp
 		heston_ml_both.cpp
+		observer.cpp
 )
 add_library(heston_common STATIC ${SOURCE} ${HEADERS})
 
