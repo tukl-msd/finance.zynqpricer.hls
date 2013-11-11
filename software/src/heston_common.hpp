@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include <iostream>
+#include <algorithm>
 
 struct HestonParams {
 	// call option
@@ -72,6 +73,53 @@ inline Statistics operator*(Statistics lhs, const double &rhs) {
 
 std::ostream& operator<<(std::ostream& o, const Statistics &s);
 
+
+/**
+ * Accumulates all log prices from all streams and calculates
+ * all the multi-level metrics on the fly
+ */
+template<typename calc_t>
+class Pricer {
+public:
+	Pricer(const bool do_multilevel, const HestonParams params)
+		: do_multilevel(do_multilevel), params(params),
+			price_mean(0), price_variance(0), price_cnt(0) {
+	}
+
+	void handle_path(calc_t fine_path, calc_t coarse_path=0) {
+		calc_t val = get_payoff(fine_path) - 
+				(do_multilevel ? get_payoff(coarse_path) : (calc_t) 0);
+		update_online_statistics(val);
+	}
+
+	Statistics get_statistics() {
+		Statistics stats;
+		stats.mean = price_mean;
+		stats.variance =price_variance / (price_cnt - 1);
+		stats.cnt = price_cnt;
+		return stats;
+	}
+private:
+	calc_t get_payoff(calc_t path) {
+		return std::max((calc_t) 0, std::exp(path) - 
+				(calc_t) params.strike_price);
+	}
+
+	void update_online_statistics(double val) {
+		// See Knuth TAOCP vol 2, 3rd edition, page 232
+		++price_cnt;
+		double delta = val - price_mean;
+		price_mean += delta / price_cnt;
+		price_variance += delta * (val - price_mean);
+	}
+
+	const bool do_multilevel;
+	const HestonParams params;
+
+	double price_mean;
+	double price_variance;
+	uint32_t price_cnt;
+};
 
 
 #endif

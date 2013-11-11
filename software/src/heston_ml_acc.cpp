@@ -8,6 +8,7 @@
 
 #include "iodev.hpp"
 #include "json_helper.hpp"
+#include "heston_common.hpp"
 #include "heston_both_acc.hpp"
 #include "heston_ml_both.hpp"
 
@@ -67,7 +68,7 @@ struct HestonParamsHWML {
 class ResultStreamParser {
 public:
 	ResultStreamParser(const uint32_t path_cnt_requested, 
-			const bool do_multilevel, Pricer &pricer)
+			const bool do_multilevel, Pricer<float> &pricer)
 			: path_cnt_requested(path_cnt_requested),
 			  do_multilevel(do_multilevel), 
 			  pricer(pricer) {
@@ -127,7 +128,7 @@ private:
 
 	const uint32_t path_cnt_requested;
 	const bool do_multilevel;
-	Pricer &pricer;
+	Pricer<float> &pricer;
 
 	uint32_t curr_block_position = 0;
 	bool is_curr_block_fine = true;
@@ -193,7 +194,7 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		throw std::runtime_error("no accelerators found");
 
 	// setup pricer and parser
-	Pricer pricer(do_multilevel, p);
+	Pricer<float> pricer(do_multilevel, p);
 	std::vector<ResultStreamParser> parsers;
 
 	// start accelerators
