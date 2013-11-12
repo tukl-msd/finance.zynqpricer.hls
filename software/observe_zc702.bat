@@ -1,0 +1,1 @@
+src\observe_board.py "plink brugger@172.16.13.148" "finance.zynqpricer.hls"
