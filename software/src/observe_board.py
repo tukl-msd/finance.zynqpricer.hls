@@ -110,36 +110,26 @@ class AccPanel(QFrame):
         super().__init__()
         self._config = None
         self._name = name
-        self._dirty = False # new data, but not yet redrawn
+        self._poly = None
+        self._progress = None
+        self._dirty = False # new poly but not yet redrawn
         self.setFrameStyle(QFrame.Box)
-
-        self.fig = Figure(facecolor = (1,1,1))
-        self.axes = self.fig.add_subplot(111)
-        self.canvas = FigureCanvas(self.fig)
-        self.canvas.setParent(self)
-        self.canvas.show()
-        self._line = None
-        self._background = None
-
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.canvas)
-        self.setLayout(layout)
-
-        self._init_plot()
+        self._t = time.time()
 
     def minimumSizeHint(self):
         return QSize(100, 100)
 
     def set_config(self, config):
         self._config = config
-        self._init_plot()
+        self._poly = None
+        self._progress = None
+        self.update()
 
     def get_heston_path(self):
         heston = self._config['heston']
         stock = [math.log(heston['spot_price'])]
         vola = [heston['vola_0']]
-        step_cnt = self._config['simulation_sl']['step_cnt']
+        step_cnt = min(self.width(), self._config['simulation_sl']['step_cnt'])
         step_size = heston['time_to_maturity'] / step_cnt
         for _ in range(step_cnt):
             max_vola = max(0, vola[-1])
@@ -156,31 +146,45 @@ class AccPanel(QFrame):
                     sqrt_vola * w_1)
         return np.exp(np.array(stock)) # TODO: payoff
 
-    def _init_plot(self):
-        """ plot background an axes """
-        self.axes.clear()
-        if self._config is not None:
-            heston = self._config['heston']
-            step_cnt = self._config['simulation_sl']['step_cnt']
-            t = np.linspace(0, heston['time_to_maturity'], step_cnt + 1)
-            stock = t * 0 + heston['spot_price']
-            self._line = self.axes.plot(t, stock, animated=True)[0]
-            # Let's capture the background of the figure
-            self._background = self.canvas.copy_from_bbox(self.axes.bbox)
-            self.canvas.draw()
-            self.update()
+    def get_plot_width(self):
+        return self.width() - 70
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self._init_plot()
+    def heston_path_to_poly(self, stock):
+        t = np.linspace(0, self.get_plot_width(), len(stock))
+        s = self.height() - stock
+        return QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s))))
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+
+        painter.drawText(QPoint(10, 20), self._name)
+
+        if self._progress is not None:
+            painter.setBrush(QBrush(QColor(255, 0, 0)))
+            painter.setPen(QPen(QColor(Qt.black), 1))
+            y = self.height() * (1 - self._progress)
+            painter.drawRect(self.get_plot_width(), y,
+                    self.width(), self.height())
+
+        if self._poly is not None:
+            painter.setPen(QPen(QColor(Qt.black), 1))
+            painter.drawPolyline(self._poly)
+        self._dirty = False
 
     def new_paths(self, new_count):
-        if new_count % 20000 == 0:
-            self.canvas.restore_region(self._background)
-            new_stock = self.get_heston_path()
-            self._line.set_ydata(new_stock)
-            self.axes.draw_artist(self._line)
-            self.canvas.blit(self.axes.bbox)
+        self._progress = (new_count / 
+                self._config['simulation_sl']['path_cnt'])
+        if not self._dirty:
+            self._dirty = True
+            stock = self.get_heston_path()
+            self._poly = self.heston_path_to_poly(stock)
+
+            print(1/(time.time() - self._t))
+            self._t = time.time()
+        else:
+            print("ignoring", self._name, new_count)
+        self.update()
 
 
 class PictureLabel(QLabel):
