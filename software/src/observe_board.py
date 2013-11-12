@@ -25,6 +25,7 @@ matplotlib.use('Qt4Agg')
 matplotlib.rcParams['backend.qt4']='PySide'
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.animation import Animation
 
 
 remote_encoding = 'latin1'
@@ -117,17 +118,22 @@ class AccPanel(QFrame):
         self.canvas = FigureCanvas(self.fig)
         self.canvas.setParent(self)
         self.canvas.show()
+        self._line = None
+        self._background = None
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
+        self._init_plot()
+
     def minimumSizeHint(self):
         return QSize(100, 100)
 
     def set_config(self, config):
         self._config = config
+        self._init_plot()
 
     def get_heston_path(self):
         heston = self._config['heston']
@@ -148,24 +154,33 @@ class AccPanel(QFrame):
                     (heston['long_term_avg_vola'] - max_vola) + 
                     heston['vol_of_vol'] * math.sqrt(step_size) * 
                     sqrt_vola * w_1)
-        t = np.linspace(0, heston['time_to_maturity'], step_cnt + 1)
-        return t, np.exp(np.array(stock)) # TODO: payoff
+        return np.exp(np.array(stock)) # TODO: payoff
 
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        self._dirty = False
+    def _init_plot(self):
+        """ plot background an axes """
+        self.axes.clear()
+        if self._config is not None:
+            heston = self._config['heston']
+            step_cnt = self._config['simulation_sl']['step_cnt']
+            t = np.linspace(0, heston['time_to_maturity'], step_cnt + 1)
+            stock = t * 0 + heston['spot_price']
+            self._line = self.axes.plot(t, stock, animated=True)[0]
+            # Let's capture the background of the figure
+            self._background = self.canvas.copy_from_bbox(self.axes.bbox)
+            self.canvas.draw()
+            self.update()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._init_plot()
 
     def new_paths(self, new_count):
         if new_count % 20000 == 0:
-            if not self._dirty:
-                self._dirty = True
-                t, x = self.get_heston_path()
-                self.axes.clear()
-                self.axes.plot(t, x)
-                self.canvas.draw()
-                self.update()
-            else:
-                print("ignoring", self._name, new_count)
+            self.canvas.restore_region(self._background)
+            new_stock = self.get_heston_path()
+            self._line.set_ydata(new_stock)
+            self.axes.draw_artist(self._line)
+            self.canvas.blit(self.axes.bbox)
 
 
 class PictureLabel(QLabel):
@@ -275,7 +290,7 @@ class Window(QWidget):
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: {} <pty_cmd> <root_dir>".format(argv[0]))
+        print("Usage: {} <pty_cmd> <root_dir>".format(sys.argv[0]))
         sys.exit(1)
     pty_cmd = sys.argv[1]
     root_dir = sys.argv[2]
