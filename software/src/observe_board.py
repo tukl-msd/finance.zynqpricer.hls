@@ -31,6 +31,7 @@ from matplotlib.animation import Animation
 remote_encoding = 'latin1'
 
 DEBUG_REMOTE = False
+DEBUG_DRAW_SPEED = False
 CMDs = ["cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
@@ -39,21 +40,20 @@ CMDs = ["cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
 
 BITSTREAM_DIR = "..\\bitstream"
 
+BUTTONS = {
+    "single-level": [
+        "cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
+        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
+            "software/parameters/params_zynq_demo_acc.json "
+            "bitstream/heston_sl_6x.json -observe"],
+    "multi-level": [
+        ],
+    "clear bitstream": [
+        "cat bitstream/empty.bin > /dev/xdevcfg"]
+}
 
 
-def line_reader(p):
-    """ generator to read line by line from p"""
-    line = []
-    while p.poll() is None:
-        r = p.stdout.read(1).decode(remote_encoding)
-        if DEBUG_REMOTE:
-            print(r, end='')
-        if r == '\n':
-            yield ''.join(line)
-            line = []
-        else:
-            line.append(r)
-    yield ''.join(line) + p.stdout.read().decode(remote_encoding)
 
 
 class RemoteObserver(QThread):
@@ -65,6 +65,7 @@ class RemoteObserver(QThread):
     processed by the Gui.
     """
     event = Signal(str, str, str)
+    console_char = Signal(str)
 
     def __init__(self, pty_cmd, root_dir):
         super().__init__()
@@ -72,6 +73,36 @@ class RemoteObserver(QThread):
         self.root_dir = root_dir
         self._p = None
 
+    def _line_reader(self, p):
+        """ generator to read line by line from p"""
+        line = []
+        in_color_code = False
+        while True:
+            r = p.stdout.read(1).decode(remote_encoding)
+            if len(r) == 0:
+                break
+            if DEBUG_REMOTE:
+                print(r, end='')
+
+            if in_color_code:
+                if r == ';':
+                    in_color_code = False
+                continue
+            elif r == '\x1b':
+                in_color_code = True
+            elif r == '\r':
+                continue
+            elif r == '\n':
+                yield ''.join(line)
+                if len(line) == 0 or line[0] != '{':
+                    self.console_char.emit(r)
+                line = []
+            else:
+                line.append(r)
+                if line[0] != '{':
+                    self.console_char.emit(r)
+        if len(line) > 0:
+            yield ''.join(line)
 
     def _send_cmd(self, msg):
         self._p.stdin.write((msg + '\n').encode(remote_encoding))
@@ -81,7 +112,7 @@ class RemoteObserver(QThread):
         self._p = subprocess.Popen(shlex.split(self.pty_cmd), 
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
                 stderr=sys.stderr)
-        reader = line_reader(self._p)
+        reader = self._line_reader(self._p)
         # wait for welcome message
         for line in reader:
             if line.startswith('Last login:'):
@@ -129,7 +160,8 @@ class AccPanel(QFrame):
         heston = self._config['heston']
         stock = [math.log(heston['spot_price'])]
         vola = [heston['vola_0']]
-        step_cnt = min(self.width(), self._config['simulation_sl']['step_cnt'])
+        step_cnt = self._config['simulation_sl']['step_cnt']
+        #step_cnt = min(self.width(), step_cnt)
         step_size = heston['time_to_maturity'] / step_cnt
         for _ in range(step_cnt):
             max_vola = max(0, vola[-1])
@@ -147,12 +179,15 @@ class AccPanel(QFrame):
         return np.exp(np.array(stock)) # TODO: payoff
 
     def get_plot_width(self):
-        return self.width() - 70
+        return self.width() - 50
 
     def heston_path_to_poly(self, stock):
         t = np.linspace(0, self.get_plot_width(), len(stock))
         s = self.height() - stock
         return QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s))))
+
+    def resizeEvent(self, event):
+        self._poly = None
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -160,12 +195,14 @@ class AccPanel(QFrame):
 
         painter.drawText(QPoint(10, 20), self._name)
 
+        #TODO: draw barrier
+
         if self._progress is not None:
             painter.setBrush(QBrush(QColor(255, 0, 0)))
             painter.setPen(QPen(QColor(Qt.black), 1))
-            y = self.height() * (1 - self._progress)
-            painter.drawRect(self.get_plot_width(), y,
-                    self.width(), self.height())
+            x = self.get_plot_width()
+            y = int(self.height() * (1 - self._progress))
+            painter.drawRect(x, y, self.width() - x - 1, self.height() - y - 1)
 
         if self._poly is not None:
             painter.setPen(QPen(QColor(Qt.black), 1))
@@ -180,10 +217,12 @@ class AccPanel(QFrame):
             stock = self.get_heston_path()
             self._poly = self.heston_path_to_poly(stock)
 
-            print(1/(time.time() - self._t))
-            self._t = time.time()
+            if DEBUG_DRAW_SPEED:
+                print(1/(time.time() - self._t))
+                self._t = time.time()
         else:
-            print("ignoring", self._name, new_count)
+            if DEBUG_DRAW_SPEED:
+                print("ignoring", self._name, new_count)
         self.update()
 
 
@@ -216,7 +255,7 @@ class DevicePanel(QFrame):
 
         layout = QVBoxLayout()
         self._fpga_img = PictureLabel()
-        self._fpga_name = QLabel("<empty>")
+        self._fpga_name = QLabel("<unknown>")
         self._fpga_name.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         layout.addWidget(self._fpga_name)
         layout.addWidget(self._fpga_img, stretch=1)
@@ -246,16 +285,45 @@ class Window(QWidget):
         super().__init__()
         self.observer = observer
         
+        # top panel (accelerators)
         self._accelerators = {}
         self._acc_box = QHBoxLayout()
+        top_panel = QWidget()
+        top_panel.setLayout(self._acc_box)
+        top_panel.resize(100, 100)
 
-        layout = QVBoxLayout()
-        layout.addLayout(self._acc_box, stretch=1)
+        # right panel (buttons & console)
+        button_layout = QHBoxLayout()
+        for name in BUTTONS:
+            button_layout.addWidget(QPushButton(name))
+        right_panel = QWidget()
+        right_layout = QVBoxLayout()
+        right_layout.addLayout(button_layout)
+        self._console = QTextEdit()
+        font = QFont("Monospace")
+        font.setStyleHint(QFont.TypeWriter)
+        self._console.setFont(font)
+        self._console.setReadOnly(True)
+        right_layout.addWidget(self._console, stretch=1)
+        right_panel.setLayout(right_layout)
+        
+        # bottom panel
         self._device_panel = DevicePanel()
-        layout.addWidget(self._device_panel, stretch=2)
+        self._device_panel.resize(300, 100)
+        bottom_splitter = QSplitter(Qt.Horizontal)
+        bottom_splitter.addWidget(self._device_panel)
+        bottom_splitter.addWidget(right_panel)
+
+        # splitter
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(top_panel)
+        splitter.addWidget(bottom_splitter)
+        layout = QVBoxLayout()
+        layout.addWidget(splitter)
         self.setLayout(layout)
 
         self.observer.event.connect(self.on_observer_event)
+        self.observer.console_char.connect(self.on_new_console_char)
         self.resize(800, 600)
         self.showMaximized()
 
@@ -287,6 +355,11 @@ class Window(QWidget):
 
     def on_new_paths(self, instance, new_count):
         self._accelerators[instance].new_paths(new_count)
+
+    def on_new_console_char(self, char):
+        cursor = self._console.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(char)
 
 
 
