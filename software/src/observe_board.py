@@ -35,17 +35,45 @@ remote_encoding = 'latin1'
 
 DEBUG_REMOTE = False
 DEBUG_DRAW_SPEED = False
-CMDs = ["cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
-        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
-        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_acc.json "
-            "bitstream/heston_sl_6x.json -observe"]
 
 BITSTREAM_DIR = "..\\bitstream"
 
+
+class Bitstream:
+    """ stores bitstream information """
+    def __init__(self, name):
+        self.name = name
+        self._pixmap_inactive = None
+        self._pixmap_active = None
+        self._config = None
+
+    def get_configuration_cmd(self):
+        return "cat bitstream/{}.bin > /dev/xdevcfg".format(self.name)
+    
+    def _path_base(self):
+        return os.path.join(BITSTREAM_DIR, self.name)
+
+    def get_pixmap(self, active):
+        if active:
+            if self._pixmap_active is None:
+                self._pixmap_active = QPixmap(self._path_base() + '_color.png')
+            return self._pixmap_active
+        else:
+            if self._pixmap_inactive is None:
+                self._pixmap_inactive = QPixmap(self._path_base() + '.png')
+            return self._pixmap_inactive
+    
+    def get_config(self):
+        if self._config is None:
+            with open(self._path_base() + '.json') as f:
+                self._config = json.load(f)
+        return self._config
+
+
 COMMAND_BUTTONS = collections.OrderedDict(((
     "single-level", [
-        "cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+        Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_acc.json "
@@ -53,9 +81,9 @@ COMMAND_BUTTONS = collections.OrderedDict(((
     "multi-level", [
         ]),(
     "clear bitstream", [
-        "cat bitstream/empty.bin > /dev/xdevcfg"])
+        #"cat bitstream/empty.bin > /dev/xdevcfg"])
+        Bitstream("empty")]),
 ))
-
 
 
 class StreamWriterThread(QThread):
@@ -156,9 +184,6 @@ class RemoteObserver(QThread):
         writer.start()
         self._writer_queue = writer.get_queue()
         self.send_cmd("cd {}".format(shlex.quote(self.root_dir)))
-        #for cmd in CMDs:
-        #    self.send_cmd(cmd)
-        #self.send_cmd("exit")
     
         for line in reader:
             try:
@@ -170,7 +195,6 @@ class RemoteObserver(QThread):
                     self.event.emit(data["__event__"], 
                             json.dumps(data["__value__"]),
                             data.get("__instance__", None))
-
         writer.stop()
 
 
@@ -186,6 +210,8 @@ class AccPanel(QFrame):
         self.setFrameStyle(QFrame.Box)
         self._t = time.time()
 
+        self.state_changed = Signal(bool)
+
     def minimumSizeHint(self):
         return QSize(100, 100)
 
@@ -196,11 +222,14 @@ class AccPanel(QFrame):
         self.update()
 
     def get_heston_path(self):
+        #TODO: optimize dict access in inner loop
+        #TODO: use multiprocessing
         heston = self._config['heston']
         stock = [math.log(heston['spot_price'])]
         vola = [heston['vola_0']]
         step_cnt = self._config['simulation_sl']['step_cnt']
-        #step_cnt = min(self.width(), step_cnt)
+        #TODO: make checkbox for fast drawing
+        step_cnt = min(self.width(), step_cnt)
         step_size = heston['time_to_maturity'] / step_cnt
         for _ in range(step_cnt):
             max_vola = max(0, vola[-1])
@@ -291,6 +320,7 @@ class DevicePanel(QFrame):
     def __init__(self):
         super().__init__()
         #self.setFrameStyle(QFrame.Box)
+        self._active = False
 
         layout = QVBoxLayout()
         self._fpga_img = PictureLabel()
@@ -300,22 +330,16 @@ class DevicePanel(QFrame):
         layout.addWidget(self._fpga_img, stretch=1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-        self.update_fpga_image()
 
     def minimumSizeHint(self):
         return QSize(20, 20)
+    
+    def set_active(self, active):
+        self._active = active
 
-    def update_fpga_image(self, filename=None):
-        """
-        filname - path to fpga config file. 
-            Assuming that the config is in  BITSTREAM_DIR and ends with *.json
-        """
-        if filename is not None:
-            basename = os.path.basename(filename)
-            path = os.path.join(BITSTREAM_DIR, basename).\
-                    replace(".json", "_color.png")
-            self._fpga_img.setPixmap(QPixmap(path))
-            self._fpga_name.setText(basename)
+    def set_bitstream(self, bitstream):
+        self._fpga_img.setPixmap(bitstream.get_pixmap(self._active))
+        self._fpga_name.setText(bitstream.name)
 
 
 class Window(QWidget):
@@ -371,29 +395,31 @@ class Window(QWidget):
 
     def on_observer_event(self, type, value, instance=None):
         value = json.loads(value)
-        if type == "fpga_config":
-            self.on_new_fpga_config(value)
-        elif type == "setup_sl":
+        #if type == "fpga_config":
+        #    self.on_new_fpga_config(value)
+        if type == "setup_sl":
             self.on_setup_sl(instance, value)
         elif type == "new_path":
             self.on_new_paths(instance, value)
         else:
             print("unknown event:", type, value, instance)
 
-    def on_new_fpga_config(self, fpga_config_file):
-        self._device_panel.update_fpga_image(fpga_config_file)
+    def set_bitstream(self, bitstream):
+        self._device_panel.set_bitstream(bitstream)
 
         # delete all accelerator widgets
         for i in reversed(range(self._acc_box.count())):
             self._acc_box.itemAt(i).widget().deleteLater()
         self._accelerators = {}
 
-    def on_setup_sl(self, instance, config):
-        if instance not in self._accelerators:
+        # read config file and setup accelerator widgets
+        for instance in bitstream.get_config():
             acc = AccPanel(instance)
             self._accelerators[instance] = acc
             self._acc_box.addWidget(acc)
-        acc.set_config(config)
+
+    def on_setup_sl(self, instance, config):
+        self._accelerators[instance].set_config(config)
 
     def on_new_paths(self, instance, new_count):
         self._accelerators[instance].new_paths(new_count)
@@ -402,9 +428,15 @@ class Window(QWidget):
         cursor = self._console.textCursor()
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(char)
+        self._console.setTextCursor(cursor)
 
     def on_command_button(self, name):
-        for cmd in COMMAND_BUTTONS[name]:
+        for item in COMMAND_BUTTONS[name]:
+            if isinstance(item, Bitstream):
+                cmd = item.get_configuration_cmd()
+                self.set_bitstream(item)
+            else:
+                cmd = item
             self.observer.send_cmd(cmd)
 
 
