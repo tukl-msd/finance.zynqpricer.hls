@@ -14,6 +14,9 @@ import json
 import threading
 import os
 import math
+import functools
+import collections
+import queue
 
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -40,20 +43,46 @@ CMDs = ["cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
 
 BITSTREAM_DIR = "..\\bitstream"
 
-BUTTONS = {
-    "single-level": [
+COMMAND_BUTTONS = collections.OrderedDict(((
+    "single-level", [
         "cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_acc.json "
-            "bitstream/heston_sl_6x.json -observe"],
-    "multi-level": [
-        ],
-    "clear bitstream": [
-        "cat bitstream/empty.bin > /dev/xdevcfg"]
-}
+            "bitstream/heston_sl_6x.json -observe"]),(
+    "multi-level", [
+        ]),(
+    "clear bitstream", [
+        "cat bitstream/empty.bin > /dev/xdevcfg"])
+))
 
 
+
+class StreamWriterThread(QThread):
+    _timeout = 0.01 # seconds
+
+    def __init__(self, out_stream):
+        super().__init__()
+        self._q = queue.Queue()
+        self._stream = out_stream
+        self._stopped = False
+
+    def stop(self):
+        self._stopped = True
+        self.wait()
+
+    def run(self):
+        while not self._stopped:
+            try:
+                val = self._q.get(True, self._timeout)
+                pass
+            except queue.Empty:
+                pass
+            else:
+                self._stream.write(val)
+
+    def get_queue(self):
+        return self._q
 
 
 class RemoteObserver(QThread):
@@ -72,6 +101,7 @@ class RemoteObserver(QThread):
         self.pty_cmd = pty_cmd
         self.root_dir = root_dir
         self._p = None
+        self._writer_queue = None
 
     def _line_reader(self, p):
         """ generator to read line by line from p"""
@@ -83,7 +113,6 @@ class RemoteObserver(QThread):
                 break
             if DEBUG_REMOTE:
                 print(r, end='')
-
             if in_color_code:
                 if r == ';':
                     in_color_code = False
@@ -91,6 +120,8 @@ class RemoteObserver(QThread):
             elif r == '\x1b':
                 in_color_code = True
             elif r == '\r':
+                continue
+            elif r == '\x07':
                 continue
             elif r == '\n':
                 yield ''.join(line)
@@ -104,9 +135,12 @@ class RemoteObserver(QThread):
         if len(line) > 0:
             yield ''.join(line)
 
-    def _send_cmd(self, msg):
-        self._p.stdin.write((msg + '\n').encode(remote_encoding))
+    def send_cmd(self, msg):
+        """ send unicode command to remote shell (thread-save) """
+        self._writer_queue.put((msg + '\n').encode(remote_encoding))
 
+    def close(self):
+        self.send_cmd("exit")
 
     def run(self):
         self._p = subprocess.Popen(shlex.split(self.pty_cmd), 
@@ -118,10 +152,13 @@ class RemoteObserver(QThread):
             if line.startswith('Last login:'):
                 break
 
-        self._send_cmd("cd {}".format(shlex.quote(self.root_dir)))
-        for cmd in CMDs:
-            self._send_cmd(cmd)
-        self._send_cmd("exit")
+        writer = StreamWriterThread(self._p.stdin)
+        writer.start()
+        self._writer_queue = writer.get_queue()
+        self.send_cmd("cd {}".format(shlex.quote(self.root_dir)))
+        #for cmd in CMDs:
+        #    self.send_cmd(cmd)
+        #self.send_cmd("exit")
     
         for line in reader:
             try:
@@ -133,6 +170,8 @@ class RemoteObserver(QThread):
                     self.event.emit(data["__event__"], 
                             json.dumps(data["__value__"]),
                             data.get("__instance__", None))
+
+        writer.stop()
 
 
 class AccPanel(QFrame):
@@ -294,8 +333,11 @@ class Window(QWidget):
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
-        for name in BUTTONS:
-            button_layout.addWidget(QPushButton(name))
+        for name in COMMAND_BUTTONS:
+            button = QPushButton(name)
+            button.clicked.connect(functools.partial(
+                    self.on_command_button, name))
+            button_layout.addWidget(button)
         right_panel = QWidget()
         right_layout = QVBoxLayout()
         right_layout.addLayout(button_layout)
@@ -361,6 +403,11 @@ class Window(QWidget):
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(char)
 
+    def on_command_button(self, name):
+        for cmd in COMMAND_BUTTONS[name]:
+            self.observer.send_cmd(cmd)
+
+
 
 
 
@@ -379,6 +426,7 @@ def main():
     win = Window(observer)
     win.show()
     ret = app.exec_()
+    observer.close()
     observer.wait()
     return ret
 
