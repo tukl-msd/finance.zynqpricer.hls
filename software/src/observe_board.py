@@ -205,7 +205,7 @@ class AccPanel(QFrame):
     state_changed = Signal(bool)
 
     """ Widget visulizing accelerator behaviour as matplotlib graph """
-    def __init__(self, name):
+    def __init__(self, name, fast_drawing):
         super().__init__()
         self._config = None
         self._name = name
@@ -215,6 +215,7 @@ class AccPanel(QFrame):
         self.setFrameStyle(QFrame.Box)
         self._t = time.time()
         self._activity = False
+        self._fast_drawing = fast_drawing
 
     def minimumSizeHint(self):
         return QSize(100, 100)
@@ -233,6 +234,11 @@ class AccPanel(QFrame):
 
     def get_activity(self):
         return self._activity
+    
+    def set_fast_drawing(self, fast_drawing):
+        self._fast_drawing = fast_drawing
+        self._poly = None
+        self.update()
 
     def get_heston_path(self):
         #TODO: optimize dict access in inner loop
@@ -241,8 +247,9 @@ class AccPanel(QFrame):
         stock = [math.log(heston['spot_price'])]
         vola = [heston['vola_0']]
         step_cnt = self._config['simulation_sl']['step_cnt']
-        #TODO: make checkbox for fast drawing
-        step_cnt = min(self.width(), step_cnt)
+        # only draw as many points as visible on screen
+        if self._fast_drawing:
+            step_cnt = min(self.width(), step_cnt)
         step_size = heston['time_to_maturity'] / step_cnt
         for _ in range(step_cnt):
             max_vola = max(0, vola[-1])
@@ -257,7 +264,7 @@ class AccPanel(QFrame):
                     (heston['long_term_avg_vola'] - max_vola) + 
                     heston['vol_of_vol'] * math.sqrt(step_size) * 
                     sqrt_vola * w_1)
-        return np.exp(np.array(stock)) # TODO: payoff
+        return np.exp(np.array(stock))
 
     def get_plot_width(self):
         return self.width() - 50
@@ -372,6 +379,8 @@ class Window(QWidget):
         super().__init__()
         self.observer = observer
         
+        self._fast_drawing = True
+        
         # top panel (accelerators)
         self._accelerators = {}
         self._acc_box = QHBoxLayout()
@@ -398,6 +407,10 @@ class Window(QWidget):
         self._console.setFont(font)
         self._console.setReadOnly(True)
         right_layout.addWidget(self._console, stretch=1)
+        checkbox = QCheckBox("fast path generation")
+        checkbox.setCheckState(Qt.Checked)
+        checkbox.stateChanged.connect(self.on_fast_drawing_state_changed)
+        right_layout.addWidget(checkbox)
         right_panel.setLayout(right_layout)
         
         # bottom panel
@@ -415,6 +428,7 @@ class Window(QWidget):
         layout.addWidget(splitter)
         self.setLayout(layout)
 
+        # connect observer signals
         self.observer.event.connect(self.on_observer_event)
         self.observer.console_char.connect(self.on_new_console_char)
         self.observer.connected.connect(self.on_console_connected)
@@ -443,7 +457,7 @@ class Window(QWidget):
 
         # read config file and setup accelerator widgets
         for instance in sorted(bitstream.get_config()):
-            acc = AccPanel(instance)
+            acc = AccPanel(instance, self._fast_drawing)
             self._accelerators[instance] = acc
             self._acc_box.addWidget(acc)
             acc.state_changed.connect(self.on_accelerator_activity_change)
@@ -481,6 +495,11 @@ class Window(QWidget):
 
     def on_console_connected(self):
         self.set_button_enabled(True)
+
+    def on_fast_drawing_state_changed(self, state):
+        self._fast_drawing = state == Qt.Checked
+        for acc in self._accelerators.values():
+            acc.set_fast_drawing(self._fast_drawing)
 
 
 
