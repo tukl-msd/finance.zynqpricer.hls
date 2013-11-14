@@ -71,18 +71,31 @@ class Bitstream:
 
 
 COMMAND_BUTTONS = collections.OrderedDict(((
-    "Singlelevel Heston", [
+    "Singlelevel Heston 1", [
         #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_observe.json "
             "bitstream/heston_sl_6x.json -observe"]),(
-    "Multilevel Heston", [
+    "Multilevel Heston 1", [
         Bitstream("heston_ml_5x"),
         "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
         "sudo taskset -c 1 software/bin/run_heston -ml -acc "
             "software/parameters/params_zynq_demo_observe.json "
+            "bitstream/heston_ml_5x.json -observe"]),(
+    "Singlelevel Heston 2", [
+        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+        Bitstream("heston_sl_6x"),
+        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
+        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
+            "software/parameters/params_zynq_demo_observe2.json "
+            "bitstream/heston_sl_6x.json -observe"]),(
+    "Multilevel Heston 2", [
+        Bitstream("heston_ml_5x"),
+        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
+        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
+            "software/parameters/params_zynq_demo_observe2.json "
             "bitstream/heston_ml_5x.json -observe"]),(
     "Clear Bitstream", [
         #"cat bitstream/empty.bin > /dev/xdevcfg"])
