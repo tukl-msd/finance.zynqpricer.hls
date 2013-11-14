@@ -238,15 +238,13 @@ class AccPanel(QFrame):
     def _get_step_cnt(self):
         if self._acc_class == "heston_sl":
             return self._config['simulation_sl']['step_cnt']
-        elif self._acc_class == "heston_ml":
-            return self._config['step_cnt_fine']
         else:
-            raise Exception("Unknown accelerator class")
+            return self._config['step_cnt_fine']
 
     def set_config(self, config):
         self._config = config
         self._poly = None
-        self._progress = None
+        self._progress = 0
         self._set_activity(self._get_path_cnt() != 0)
         self.update()
 
@@ -264,6 +262,8 @@ class AccPanel(QFrame):
         self.update()
 
     def get_heston_path(self):
+        if self._acc_class == "heston_ml":
+            return np.array([1, 2])
         #TODO: optimize dict access in inner loop
         #TODO: use multiprocessing
         heston = self._config['heston']
@@ -309,9 +309,18 @@ class AccPanel(QFrame):
         painter.drawText(QPoint(10, 20), self._name)
         if self._config is not None:
             painter.drawText(QPoint(10, 35), 
-                    "Number of paths: {}".format(self._get_path_cnt()))
+                    "Number of paths: {} / {}".format(
+                    int(self._progress * self._get_path_cnt()),
+                    self._get_path_cnt()))
+            if self._acc_class == "heston_ml" and \
+                    self._config['do_multilevel']:
+                fine = '{} / '.format(self._config['step_cnt_fine'] // 
+                        self._config['ml_params']['simulation_ml']
+                        ['ml_constant'])
+            else:
+                fine = ''
             painter.drawText(QPoint(10, 50), 
-                    "Number of steps: {}".format(self._get_step_cnt()))
+                    "Number of steps: {}{}".format(fine, self._get_step_cnt()))
 
 
         #TODO: draw barrier
@@ -383,7 +392,7 @@ class DevicePanel(QFrame):
         self._fpga_name = QLabel("<unknown>")
         self._fpga_name.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         font = self._fpga_name.font()
-        font.setPointSize(24)
+        font.setPointSize(20)
         font.setBold(True)
         self._fpga_name.setFont(font)
         layout.addWidget(self._fpga_name)
