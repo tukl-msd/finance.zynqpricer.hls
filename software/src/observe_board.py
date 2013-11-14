@@ -71,18 +71,21 @@ class Bitstream:
 
 
 COMMAND_BUTTONS = collections.OrderedDict(((
-    "single-level", [
+    "Singlelevel Heston", [
         #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_acc.json "
             "bitstream/heston_sl_6x.json -observe"]),(
-    "multi-level", [
-        ]),(
-    "clear bitstream", [
+    "Multilevel Heston", [
+        Bitstream("heston_ml_5x"),
+        "sudo software/bin/init_rng bitstream/heston_ml_5x.json"]),(
+    "Clear Bitstream", [
         #"cat bitstream/empty.bin > /dev/xdevcfg"])
-        Bitstream("empty")]),
+        Bitstream("empty")]),(
+    "Multilevel Bitstream", [
+        Bitstream("heston_ml_5x")])
 ))
 
 
@@ -202,9 +205,9 @@ class RemoteObserver(QThread):
 
 
 class AccPanel(QFrame):
+    """ Widget visulizing accelerator behaviour as matplotlib graph """
     state_changed = Signal(bool)
 
-    """ Widget visulizing accelerator behaviour as matplotlib graph """
     def __init__(self, name, fast_drawing):
         super().__init__()
         self._config = None
@@ -415,7 +418,7 @@ class Window(QWidget):
         
         # bottom panel
         self._device_panel = DevicePanel()
-        self._device_panel.resize(300, 100)
+        self._device_panel.resize(500, 100)
         bottom_splitter = QSplitter(Qt.Horizontal)
         bottom_splitter.addWidget(self._device_panel)
         bottom_splitter.addWidget(right_panel)
