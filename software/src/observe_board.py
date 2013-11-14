@@ -262,18 +262,24 @@ class AccPanel(QFrame):
         self.update()
 
     def get_heston_path(self):
-        if self._acc_class == "heston_ml":
-            return np.array([1, 2])
+        if self._acc_class == "heston_sl":
+            heston = self._config['heston']
+            do_multilevel = False
+        else:
+            heston = self._config['ml_params']['heston']
+            do_multilevel = self._config['do_multilevel']
+            ml_constant = self._config['ml_params']['simulation_ml']\
+                    ['ml_constant']
         #TODO: optimize dict access in inner loop
         #TODO: use multiprocessing
-        heston = self._config['heston']
         stock = [math.log(heston['spot_price'])]
         vola = [heston['vola_0']]
-        step_cnt = self._config['simulation_sl']['step_cnt']
+        step_cnt = self._get_step_cnt()
         # only draw as many points as visible on screen
         if self._fast_drawing:
             step_cnt = min(self.width(), step_cnt)
         step_size = heston['time_to_maturity'] / step_cnt
+        w_array = []
         for _ in range(step_cnt):
             max_vola = max(0, vola[-1])
             sqrt_vola = np.sqrt(max_vola)
@@ -287,15 +293,46 @@ class AccPanel(QFrame):
                     (heston['long_term_avg_vola'] - max_vola) + 
                     heston['vol_of_vol'] * math.sqrt(step_size) * 
                     sqrt_vola * w_1)
-        return np.exp(np.array(stock))
+            w_array.append((w_0, w_1))
+        coarse_stock = np.exp(np.array(stock))
+        # calculate coarse path
+        if do_multilevel:
+            step_size_fine = step_size
+            w_array = list(reversed(w_array))
+            stock = [math.log(heston['spot_price'])]
+            vola = [heston['vola_0']]
+            step_cnt = step_cnt // ml_constant
+            step_size = heston['time_to_maturity'] / step_cnt
+            for _ in range(step_cnt):
+                max_vola = max(0, vola[-1])
+                sqrt_vola = np.sqrt(max_vola)
+                w_0 = w_1 = 0
+                for _ in range(ml_constant):
+                    w = w_array.pop()
+                    w_0 += w[0]
+                    w_1 += w[1]
+                stock.append(stock[-1] + 
+                        (heston['riskless_rate'] - 0.5 * max_vola) *
+                        step_size + math.sqrt(step_size_fine) * sqrt_vola * w_0)
+                vola.append(vola[-1] + heston['reversion_rate'] * step_size *
+                        (heston['long_term_avg_vola'] - max_vola) + 
+                        heston['vol_of_vol'] * math.sqrt(step_size_fine) * 
+                        sqrt_vola * w_1)
+            fine_stock = np.exp(np.array(stock))
+            return coarse_stock, fine_stock
+        else:
+            return (coarse_stock,)
 
     def get_plot_width(self):
         return self.width() - 50
 
-    def heston_path_to_poly(self, stock):
-        t = np.linspace(0, self.get_plot_width(), len(stock))
-        s = self.height() - stock
-        return QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s))))
+    def heston_path_to_poly(self, stocks):
+        poly = []
+        for stock in stocks:
+            t = np.linspace(0, self.get_plot_width(), len(stock))
+            s = self.height() - stock
+            poly.append(QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s)))))
+        return poly
 
     def resizeEvent(self, event):
         self._poly = None
@@ -335,8 +372,9 @@ class AccPanel(QFrame):
 
         # polygon
         if self._poly is not None:
-            painter.setPen(QPen(QColor(Qt.black), 1))
-            painter.drawPolyline(self._poly)
+            for poly in self._poly:
+                painter.setPen(QPen(QColor(Qt.black), 1))
+                painter.drawPolyline(poly)
 
         self._dirty = False
 
