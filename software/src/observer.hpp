@@ -20,6 +20,7 @@
 struct ObserverInstanceStats {
 	uint64_t path_cnt;
 	uint64_t path_done;
+	bool is_done;
 };
 
 // singleton Observer

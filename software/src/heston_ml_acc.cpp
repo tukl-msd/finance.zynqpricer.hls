@@ -214,7 +214,7 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		
 		// notify observer
 		observer.setup_ml(acc_name, ml_params, step_cnt_fine, 
-				path_cnt, do_multilevel);
+				params_hw.path_cnt, do_multilevel);
 	}
 
 	// setup read iterator
@@ -237,6 +237,7 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		// read everything from iterator
 		while (read_it.next(price, index)) {
 			parsers[index].write(price);
+			observer.register_new_path(accelerators[index]);
 		}
 	}
 	return pricer.get_statistics();
