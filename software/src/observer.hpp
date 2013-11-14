@@ -16,11 +16,15 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <chrono>
 
 struct ObserverInstanceStats {
 	uint64_t path_cnt;
 	uint64_t path_done;
 	bool is_done;
+	// how man paths are registered for each real path
+	uint32_t scaling;
+	std::chrono::steady_clock::time_point last_printing;
 };
 
 // singleton Observer
@@ -51,6 +55,8 @@ private:
 
 	bool is_enabled;
 	std::map<std::string, ObserverInstanceStats> stats;
+
+	const double print_wait_duration = 0.1; // in seconds
 };
 
 #endif
