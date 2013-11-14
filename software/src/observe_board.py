@@ -123,6 +123,7 @@ class RemoteObserver(QThread):
     """
     event = Signal(str, str, str)
     console_char = Signal(str)
+    connected = Signal()
 
     def __init__(self, pty_cmd, root_dir):
         super().__init__()
@@ -184,6 +185,8 @@ class RemoteObserver(QThread):
         writer.start()
         self._writer_queue = writer.get_queue()
         self.send_cmd("cd {}".format(shlex.quote(self.root_dir)))
+
+        self.connected.emit()
     
         for line in reader:
             try:
@@ -199,6 +202,8 @@ class RemoteObserver(QThread):
 
 
 class AccPanel(QFrame):
+    state_changed = Signal(bool)
+
     """ Widget visulizing accelerator behaviour as matplotlib graph """
     def __init__(self, name):
         super().__init__()
@@ -209,8 +214,7 @@ class AccPanel(QFrame):
         self._dirty = False # new poly but not yet redrawn
         self.setFrameStyle(QFrame.Box)
         self._t = time.time()
-
-        self.state_changed = Signal(bool)
+        self._activity = False
 
     def minimumSizeHint(self):
         return QSize(100, 100)
@@ -219,7 +223,16 @@ class AccPanel(QFrame):
         self._config = config
         self._poly = None
         self._progress = None
+        self._set_activity(config['simulation_sl']['path_cnt'] != 0)
         self.update()
+
+    def _set_activity(self, activity):
+        if activity != self._activity:
+            self._activity = activity
+            self.state_changed.emit(activity)
+
+    def get_activity(self):
+        return self._activity
 
     def get_heston_path(self):
         #TODO: optimize dict access in inner loop
@@ -258,7 +271,8 @@ class AccPanel(QFrame):
         self._poly = None
 
     def paintEvent(self, event):
-        super().paintEvent(event)
+        #super(QFrame, self).paintEvent(event)
+        QFrame.paintEvent(self, event)
         painter = QPainter(self)
 
         painter.drawText(QPoint(10, 20), self._name)
@@ -266,7 +280,7 @@ class AccPanel(QFrame):
         #TODO: draw barrier
 
         if self._progress is not None:
-            painter.setBrush(QBrush(QColor(255, 0, 0)))
+            painter.setBrush(QBrush(QColor(200, 200, 200)))
             painter.setPen(QPen(QColor(Qt.black), 1))
             x = self.get_plot_width()
             y = int(self.height() * (1 - self._progress))
@@ -278,8 +292,9 @@ class AccPanel(QFrame):
         self._dirty = False
 
     def new_paths(self, new_count):
-        self._progress = (new_count / 
-                self._config['simulation_sl']['path_cnt'])
+        path_cnt = self._config['simulation_sl']['path_cnt']
+        self._progress = (new_count / path_cnt)
+        self._set_activity(new_count != path_cnt)
         if not self._dirty:
             self._dirty = True
             stock = self.get_heston_path()
@@ -321,6 +336,7 @@ class DevicePanel(QFrame):
         super().__init__()
         #self.setFrameStyle(QFrame.Box)
         self._active = False
+        self._bitstream = None
 
         layout = QVBoxLayout()
         self._fpga_img = PictureLabel()
@@ -335,11 +351,19 @@ class DevicePanel(QFrame):
         return QSize(20, 20)
     
     def set_active(self, active):
-        self._active = active
+        if self._active != active:
+            self._active = active
+            self._update()
 
     def set_bitstream(self, bitstream):
-        self._fpga_img.setPixmap(bitstream.get_pixmap(self._active))
-        self._fpga_name.setText(bitstream.name)
+        self._bitstream = bitstream
+        self._update()
+
+    def _update(self):
+        if self._bitstream is not None:
+            self._fpga_img.setPixmap(self._bitstream.get_pixmap(self._active))
+            self._fpga_name.setText(self._bitstream.name + " ({})".format(
+                    "active" if self._active else "idle"))
 
 
 class Window(QWidget):
@@ -357,11 +381,14 @@ class Window(QWidget):
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
+        self._buttons = {}
         for name in COMMAND_BUTTONS:
             button = QPushButton(name)
             button.clicked.connect(functools.partial(
                     self.on_command_button, name))
             button_layout.addWidget(button)
+            button.setEnabled(False)
+            self._buttons[name] = button
         right_panel = QWidget()
         right_layout = QVBoxLayout()
         right_layout.addLayout(button_layout)
@@ -390,6 +417,8 @@ class Window(QWidget):
 
         self.observer.event.connect(self.on_observer_event)
         self.observer.console_char.connect(self.on_new_console_char)
+        self.observer.connected.connect(self.on_console_connected)
+
         self.resize(800, 600)
         self.showMaximized()
 
@@ -413,10 +442,11 @@ class Window(QWidget):
         self._accelerators = {}
 
         # read config file and setup accelerator widgets
-        for instance in bitstream.get_config():
+        for instance in sorted(bitstream.get_config()):
             acc = AccPanel(instance)
             self._accelerators[instance] = acc
             self._acc_box.addWidget(acc)
+            acc.state_changed.connect(self.on_accelerator_activity_change)
 
     def on_setup_sl(self, instance, config):
         self._accelerators[instance].set_config(config)
@@ -439,7 +469,18 @@ class Window(QWidget):
                 cmd = item
             self.observer.send_cmd(cmd)
 
+    def set_button_enabled(self, enabled):
+        for button in self._buttons.values():
+            button.setEnabled(enabled)
 
+    def on_accelerator_activity_change(self, state):
+        activity = any(acc.get_activity() 
+                for acc in self._accelerators.values())
+        self._device_panel.set_active(activity)
+        self.set_button_enabled(not activity)
+
+    def on_console_connected(self):
+        self.set_button_enabled(True)
 
 
 
