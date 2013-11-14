@@ -7,6 +7,7 @@
 //
 
 #include "heston_ml_both.hpp"
+#include "observer.hpp"
 
 #include <stdint.h>
 
@@ -109,11 +110,14 @@ double heston_ml_control(const HestonParamsML &ml_params,
 			if (path_cnt_todo > 0) {
 				uint32_t step_cnt = get_time_step_cnt(level, ml_params);
 				bool do_multilevel = (level > 0);
-				if (do_print)
+				if (do_print) {
 					std::cout << "current_level " << current_level <<
 							" level " << level << " step_cnt " << 
 							step_cnt << " path_cnt " << 
 							path_cnt_todo << ": " << std::flush;
+					if (Observer::getInstance().get_enabled())
+						std::cout << std::endl;
+				}
 				auto start = std::chrono::steady_clock::now();
 				Statistics new_stats = ml_kernel(ml_params, step_cnt, 
 						path_cnt_todo, do_multilevel, ml_params.ml_constant);

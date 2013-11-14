@@ -113,6 +113,18 @@ Json::Value dump_sl_params(HestonParamsSL params) {
 	return json;
 }
 
+Json::Value dump_ml_params(HestonParamsML params) {
+	auto json = dump_heston_params(params);
+	// simulation params
+	Json::Value simulation;
+	simulation["ml_start_level"] = params.ml_start_level;
+	simulation["ml_constant"] = params.ml_constant;
+	simulation["ml_path_cnt_start"] = params.ml_path_cnt_start;
+	simulation["ml_epsilon"] = params.ml_epsilon;
+	json["simulation_ml"] = simulation;
+	return json;
+}
+
 unsigned asHex(Json::Value val) {
 	return std::stoul(val.asString(), 0, 0);
 }
