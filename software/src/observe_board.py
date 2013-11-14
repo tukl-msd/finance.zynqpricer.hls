@@ -76,11 +76,14 @@ COMMAND_BUTTONS = collections.OrderedDict(((
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_acc.json "
+            "software/parameters/params_zynq_demo_observe.json "
             "bitstream/heston_sl_6x.json -observe"]),(
     "Multilevel Heston", [
         Bitstream("heston_ml_5x"),
-        "sudo software/bin/init_rng bitstream/heston_ml_5x.json"]),(
+        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
+        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
+            "software/parameters/params_zynq_demo_observe.json "
+            "bitstream/heston_ml_5x.json -observe"]),(
     "Clear Bitstream", [
         #"cat bitstream/empty.bin > /dev/xdevcfg"])
         Bitstream("empty")]),(
@@ -208,26 +211,43 @@ class AccPanel(QFrame):
     """ Widget visulizing accelerator behaviour as matplotlib graph """
     state_changed = Signal(bool)
 
-    def __init__(self, name, fast_drawing):
+    def __init__(self, name, acc_class, fast_drawing):
         super().__init__()
-        self._config = None
         self._name = name
+        self._acc_class = acc_class
+        self._fast_drawing = fast_drawing
+        self._config = None
         self._poly = None
         self._progress = None
         self._dirty = False # new poly but not yet redrawn
         self.setFrameStyle(QFrame.Box)
         self._t = time.time()
         self._activity = False
-        self._fast_drawing = fast_drawing
 
     def minimumSizeHint(self):
         return QSize(100, 100)
+
+    def _get_path_cnt(self):
+        if self._acc_class == "heston_sl":
+            return self._config['simulation_sl']['path_cnt']
+        elif self._acc_class == "heston_ml":
+            return self._config['path_cnt']
+        else:
+            raise Exception("Unknown accelerator class")
+
+    def _get_step_cnt(self):
+        if self._acc_class == "heston_sl":
+            return self._config['simulation_sl']['step_cnt']
+        elif self._acc_class == "heston_ml":
+            return self._config['step_cnt_fine']
+        else:
+            raise Exception("Unknown accelerator class")
 
     def set_config(self, config):
         self._config = config
         self._poly = None
         self._progress = None
-        self._set_activity(config['simulation_sl']['path_cnt'] != 0)
+        self._set_activity(self._get_path_cnt() != 0)
         self.update()
 
     def _set_activity(self, activity):
@@ -285,10 +305,18 @@ class AccPanel(QFrame):
         QFrame.paintEvent(self, event)
         painter = QPainter(self)
 
+        # text
         painter.drawText(QPoint(10, 20), self._name)
+        if self._config is not None:
+            painter.drawText(QPoint(10, 35), 
+                    "Number of paths: {}".format(self._get_path_cnt()))
+            painter.drawText(QPoint(10, 50), 
+                    "Number of steps: {}".format(self._get_step_cnt()))
+
 
         #TODO: draw barrier
 
+        # progress bar
         if self._progress is not None:
             painter.setBrush(QBrush(QColor(200, 200, 200)))
             painter.setPen(QPen(QColor(Qt.black), 1))
@@ -296,13 +324,15 @@ class AccPanel(QFrame):
             y = int(self.height() * (1 - self._progress))
             painter.drawRect(x, y, self.width() - x - 1, self.height() - y - 1)
 
+        # polygon
         if self._poly is not None:
             painter.setPen(QPen(QColor(Qt.black), 1))
             painter.drawPolyline(self._poly)
+
         self._dirty = False
 
     def new_paths(self, new_count):
-        path_cnt = self._config['simulation_sl']['path_cnt']
+        path_cnt = self._get_path_cnt()
         self._progress = (new_count / path_cnt)
         self._set_activity(new_count != path_cnt)
         if not self._dirty:
@@ -352,6 +382,10 @@ class DevicePanel(QFrame):
         self._fpga_img = PictureLabel()
         self._fpga_name = QLabel("<unknown>")
         self._fpga_name.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        font = self._fpga_name.font()
+        font.setPointSize(24)
+        font.setBold(True)
+        self._fpga_name.setFont(font)
         layout.addWidget(self._fpga_name)
         layout.addWidget(self._fpga_img, stretch=1)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -445,6 +479,8 @@ class Window(QWidget):
         #    self.on_new_fpga_config(value)
         if type == "setup_sl":
             self.on_setup_sl(instance, value)
+        elif type == "setup_ml":
+            self.on_setup_ml(instance, value)
         elif type == "new_path":
             self.on_new_paths(instance, value)
         else:
@@ -459,13 +495,18 @@ class Window(QWidget):
         self._accelerators = {}
 
         # read config file and setup accelerator widgets
-        for instance in sorted(bitstream.get_config()):
-            acc = AccPanel(instance, self._fast_drawing)
+        config = bitstream.get_config()
+        for instance in sorted(config):
+            acc = AccPanel(instance, config[instance]["__class__"], 
+                    self._fast_drawing)
             self._accelerators[instance] = acc
             self._acc_box.addWidget(acc)
             acc.state_changed.connect(self.on_accelerator_activity_change)
 
     def on_setup_sl(self, instance, config):
+        self._accelerators[instance].set_config(config)
+
+    def on_setup_ml(self, instance, config):
         self._accelerators[instance].set_config(config)
 
     def on_new_paths(self, instance, new_count):
