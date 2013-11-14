@@ -37,16 +37,18 @@ public:
 	void update_fpga_config(std::string path);
 
 	void setup_sl(const std::string &instance, HestonParamsSL sl_params);
+	void setup_ml(const std::string &instance, HestonParamsML ml_params,
+			uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel);
 	void register_new_path(const std::string &instance);
 
 	void enable(bool enabled=true);
+	bool get_enabled();
 private:
 	void send(std::string event, Json::Value value);
 	void send_from(std::string event, std::string instance, Json::Value value);
 	void send_raw(Json::Value root);
 
 	bool is_enabled;
-	std::map<std::string, std::unique_ptr<HestonParams>> params;
 	std::map<std::string, ObserverInstanceStats> stats;
 };
 

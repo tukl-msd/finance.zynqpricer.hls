@@ -11,6 +11,7 @@
 #include "heston_common.hpp"
 #include "heston_both_acc.hpp"
 #include "heston_ml_both.hpp"
+#include "observer.hpp"
 
 #include "json/json.h"
 
@@ -183,13 +184,15 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		0};
 
 	// find accelerators
-	std::vector<Json::Value> accelerators;
+	std::vector<std::string> accelerators;
 	std::vector<Json::Value> fifos;
-	for (auto component: bitstream)
+	for (auto name: bitstream.getMemberNames()) {
+		auto component = bitstream[name];
 		if (component["__class__"] == "heston_ml") {
-			accelerators.push_back(component);
+			accelerators.push_back(name);
 			fifos.push_back(component["axi_fifo"]);
 		}
+	}
 	if (accelerators.size() == 0)
 		throw std::runtime_error("no accelerators found");
 
@@ -197,14 +200,21 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 	Pricer<float> pricer(do_multilevel, p);
 	std::vector<ResultStreamParser> parsers;
 
+	auto &observer = Observer::getInstance();
+
 	// start accelerators
 	uint32_t acc_path_cnt = path_cnt / accelerators.size();
 	int path_cnt_remainder = path_cnt % accelerators.size();
-	for (auto acc: accelerators) {
+	for (auto acc_name: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
-		start_heston_accelerator(acc, &params_hw, sizeof(params_hw));
+		start_heston_accelerator(bitstream[acc_name], 
+				&params_hw, sizeof(params_hw));
 		parsers.push_back(ResultStreamParser(params_hw.path_cnt, 
 				do_multilevel, pricer));
+		
+		// notify observer
+		observer.setup_ml(acc_name, ml_params, step_cnt_fine, 
+				path_cnt, do_multilevel);
 	}
 
 	// setup read iterator

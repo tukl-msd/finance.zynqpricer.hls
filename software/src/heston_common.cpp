@@ -40,8 +40,8 @@ Statistics& Statistics::operator*=(const double &rhs) {
 }
 
 std::ostream& operator<<(std::ostream& o, const Statistics &s) {
-	return o << "{\"mean\": " << s.mean << ", \"variance\": " <<
-			s.variance << ", \"cnt\": " << s.cnt << "}";
+	return o << "<\"mean\": " << s.mean << ", \"variance\": " <<
+			s.variance << ", \"cnt\": " << s.cnt << ">";
 }
 
 

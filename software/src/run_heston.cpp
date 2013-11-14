@@ -107,7 +107,6 @@ int main(int argc, char *argv[]) {
 		std::string bitstream_path = argv[4];
 		bitstream = read_params(bitstream_path.c_str());
 		Observer::getInstance().enable(do_observe);
-		Observer::getInstance().update_fpga_config(bitstream_path);
 	}
 
 	// heston params

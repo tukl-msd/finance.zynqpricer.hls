@@ -83,6 +83,8 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 			fifos.push_back(component["axi_fifo"]);
 		}
 	}
+	if (accelerators.size() == 0)
+		throw std::runtime_error("no accelerators found");
 
 	auto &observer = Observer::getInstance();
 
