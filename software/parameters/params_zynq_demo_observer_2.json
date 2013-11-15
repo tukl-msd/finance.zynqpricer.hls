@@ -11,8 +11,8 @@
 		"strike_price": 100
 	},
 	"barrier values": {
-		"lower": 0.0001,
-		"upper": 100000
+		"lower": 50,
+		"upper": 200
 	},
 	"simulation_sl": {
 		"step_cnt": 2000,
@@ -22,7 +22,7 @@
 		"start_level": 1,
 		"ml_constant": 4,
 		"path_cnt_start": 10000,
-		"epsilon": 0.02
+		"epsilon": 0.03
 	},
 	"reference": {
 		"price": 0.74870,
