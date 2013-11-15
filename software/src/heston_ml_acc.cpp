@@ -242,6 +242,8 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		}
 	}
 
+	for (unsigned index = 0; index < accelerators.size(); ++index)
+		observer.all_paths_done(index);
 	observer.clear_accelerators();
 
 	return pricer.get_statistics();

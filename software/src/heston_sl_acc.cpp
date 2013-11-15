@@ -116,6 +116,8 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / p.path_cnt;
 
+	for (unsigned index = 0; index < accelerators.size(); ++index)
+		observer.all_paths_done(index);
 	observer.clear_accelerators();
 
 	return result;

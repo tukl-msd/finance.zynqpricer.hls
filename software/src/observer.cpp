@@ -53,19 +53,30 @@ void Observer::setup_ml(unsigned index, HestonParamsML ml_params,
 	}
 }
 
+/* optimized for speed, as it is called in tight inner loops */
 void Observer::register_new_path(unsigned index) {
-	if (is_enabled && !stats[index].is_done) {
-		ObserverInstanceStats &stat = stats[index];
-		++stat.path_done;
-		stat.is_done = stat.path_done >= stat.path_cnt;
-		std::chrono::duration<float> duration = 
-				std::chrono::steady_clock::now() - stat.last_printing;
-		if (stat.is_done || (duration.count() > print_wait_duration)) {
-			uint64_t real_path_done = stat.path_done / stat.scaling;
-			stat.last_printing = std::chrono::steady_clock::now();
-			send_from("new_path", names[index], real_path_done);
-		}
+	uint64_t path_done = ++stats[index].path_done;
+	if (!(path_done & 0xff) && is_enabled) {
+		process_path_done(index);
 	}
+}
+
+/* slow processing of new path stats */
+void Observer::process_path_done(unsigned index) {
+	ObserverInstanceStats &stat = stats[index];
+	stat.is_done = stat.path_done >= stat.path_cnt;
+	std::chrono::duration<float> duration = 
+			std::chrono::steady_clock::now() - stat.last_printing;
+	if (stat.is_done || (duration.count() > print_wait_duration)) {
+		uint64_t real_path_done = stat.path_done / stat.scaling;
+		stat.last_printing = std::chrono::steady_clock::now();
+		send_from("new_path", names[index], real_path_done);
+	}
+}
+
+void Observer::all_paths_done(unsigned index) {
+	stats[index].path_done = stats[index].path_cnt;
+	process_path_done(index);
 }
 
 void Observer::enable(bool enabled) {

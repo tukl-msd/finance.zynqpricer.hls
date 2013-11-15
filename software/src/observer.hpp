@@ -48,10 +48,12 @@ public:
 	void setup_ml(unsigned index, HestonParamsML ml_params,
 			uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel);
 	void register_new_path(unsigned index);
+	void all_paths_done(unsigned index);
 
 	void enable(bool enabled=true);
 	bool get_enabled();
 private:
+	void process_path_done(unsigned index);
 	void send(std::string event, Json::Value value);
 	void send_from(std::string event, std::string instance, Json::Value value);
 	void send_raw(Json::Value root);
