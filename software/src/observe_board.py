@@ -76,26 +76,26 @@ COMMAND_BUTTONS = collections.OrderedDict(((
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_observe.json "
+            "software/parameters/params_zynq_demo_observer_1.json "
             "bitstream/heston_sl_6x.json -observe"]),(
     "Multilevel Heston 1", [
         Bitstream("heston_ml_5x"),
         "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
         "sudo taskset -c 1 software/bin/run_heston -ml -acc "
-            "software/parameters/params_zynq_demo_observe.json "
+            "software/parameters/params_zynq_demo_observer_1.json "
             "bitstream/heston_ml_5x.json -observe"]),(
     "Singlelevel Heston 2", [
         #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_observe2.json "
+            "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_sl_6x.json -observe"]),(
     "Multilevel Heston 2", [
         Bitstream("heston_ml_5x"),
         "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
         "sudo taskset -c 1 software/bin/run_heston -ml -acc "
-            "software/parameters/params_zynq_demo_observe2.json "
+            "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_ml_5x.json -observe"]),(
     "Clear Bitstream", [
         #"cat bitstream/empty.bin > /dev/xdevcfg"])
@@ -359,9 +359,7 @@ class AccPanel(QFrame):
         painter.drawText(QPoint(10, 20), self._name)
         if self._config is not None:
             painter.drawText(QPoint(10, 35), 
-                    "Number of paths: {} / {}".format(
-                    int(self._progress * self._get_path_cnt()),
-                    self._get_path_cnt()))
+                    "Number of paths: {}".format(self._get_path_cnt()))
             if self._acc_class == "heston_ml" and \
                     self._config['do_multilevel']:
                 fine = '{} / '.format(self._config['step_cnt_fine'] // 
