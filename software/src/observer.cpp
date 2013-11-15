@@ -18,32 +18,44 @@ void Observer::update_fpga_config(std::string path) {
 	send("fpga_config", path);
 }
 
-void Observer::setup_sl(const std::string &instance, HestonParamsSL sl_params) {
+unsigned Observer::register_accelerator(const std::string &instance) {
+	ObserverInstanceStats stat;
+	stats.push_back(stat);
+	names.push_back(instance);
+	return names.size() - 1;
+}
+
+void Observer::clear_accelerators() {
+	stats.clear();
+	names.clear();
+}
+
+void Observer::setup_sl(unsigned index, HestonParamsSL sl_params) {
 	if (is_enabled) {
-		stats[instance] = {sl_params.path_cnt, 0, false, 1, 
+		stats[index] = {sl_params.path_cnt, 0, false, 1, 
 				std::chrono::steady_clock::now()};
-		send_from("setup_sl", instance, dump_sl_params(sl_params));
+		send_from("setup_sl", names[index], dump_sl_params(sl_params));
 	}
 }
 
-void Observer::setup_ml(const std::string &instance, HestonParamsML ml_params,
+void Observer::setup_ml(unsigned index, HestonParamsML ml_params,
 		uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel) {
 	if (is_enabled) {
 		uint32_t scaling = (do_multilevel) ? 2 : 1;
-		stats[instance] = {path_cnt * scaling, 0, false, 
+		stats[index] = {path_cnt * scaling, 0, false, 
 				scaling, std::chrono::steady_clock::now()};
 		Json::Value json;
 		json["ml_params"] = dump_ml_params(ml_params);
 		json["step_cnt_fine"] = step_cnt_fine;
 		json["path_cnt"] = path_cnt;
 		json["do_multilevel"] = do_multilevel;
-		send_from("setup_ml", instance, json);
+		send_from("setup_ml", names[index], json);
 	}
 }
 
-void Observer::register_new_path(const std::string &instance) {
-	if (is_enabled && !stats[instance].is_done) {
-		ObserverInstanceStats &stat = stats[instance];
+void Observer::register_new_path(unsigned index) {
+	if (is_enabled && !stats[index].is_done) {
+		ObserverInstanceStats &stat = stats[index];
 		++stat.path_done;
 		stat.is_done = stat.path_done >= stat.path_cnt;
 		std::chrono::duration<float> duration = 
@@ -51,7 +63,7 @@ void Observer::register_new_path(const std::string &instance) {
 		if (stat.is_done || (duration.count() > print_wait_duration)) {
 			uint64_t real_path_done = stat.path_done / stat.scaling;
 			stat.last_printing = std::chrono::steady_clock::now();
-			send_from("new_path", instance, real_path_done);
+			send_from("new_path", names[index], real_path_done);
 		}
 	}
 }

@@ -213,7 +213,8 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 				do_multilevel, pricer));
 		
 		// notify observer
-		observer.setup_ml(acc_name, ml_params, step_cnt_fine, 
+		unsigned index = observer.register_accelerator(acc_name);
+		observer.setup_ml(index, ml_params, step_cnt_fine, 
 				params_hw.path_cnt, do_multilevel);
 	}
 
@@ -237,9 +238,12 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		// read everything from iterator
 		while (read_it.next(price, index)) {
 			parsers[index].write(price);
-			observer.register_new_path(accelerators[index]);
+			observer.register_new_path(index);
 		}
 	}
+
+	observer.clear_accelerators();
+
 	return pricer.get_statistics();
 }
 

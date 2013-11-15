@@ -99,7 +99,8 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 		// notify observer
 		HestonParamsSL params_obs = sl_params;
 		params_obs.path_cnt = params_hw.path_cnt;
-		observer.setup_sl(acc_name, params_obs);
+		unsigned index = observer.register_accelerator(acc_name);
+		observer.setup_sl(index, params_obs);
 	}
 
 	// setup read iterator
@@ -108,12 +109,15 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 	// calculate result
 	double result = 0;
 	float price;
-	unsigned fifo_index;
-	while (read_it.next(price, fifo_index)) {
+	unsigned index;
+	while (read_it.next(price, index)) {
 		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
-		observer.register_new_path(accelerators[fifo_index]);
+		observer.register_new_path(index);
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / p.path_cnt;
+
+	observer.clear_accelerators();
+
 	return result;
 }
 

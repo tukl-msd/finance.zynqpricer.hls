@@ -41,10 +41,13 @@ public:
 
 	void update_fpga_config(std::string path);
 
-	void setup_sl(const std::string &instance, HestonParamsSL sl_params);
-	void setup_ml(const std::string &instance, HestonParamsML ml_params,
+	unsigned register_accelerator(const std::string &instance);
+	void clear_accelerators();
+
+	void setup_sl(unsigned index, HestonParamsSL sl_params);
+	void setup_ml(unsigned index, HestonParamsML ml_params,
 			uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel);
-	void register_new_path(const std::string &instance);
+	void register_new_path(unsigned index);
 
 	void enable(bool enabled=true);
 	bool get_enabled();
@@ -54,7 +57,8 @@ private:
 	void send_raw(Json::Value root);
 
 	bool is_enabled;
-	std::map<std::string, ObserverInstanceStats> stats;
+	std::vector<ObserverInstanceStats> stats;
+	std::vector<std::string> names;
 
 	const double print_wait_duration = 0.1; // in seconds
 };
