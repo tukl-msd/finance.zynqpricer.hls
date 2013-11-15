@@ -71,35 +71,34 @@ class Bitstream:
 
 
 COMMAND_BUTTONS = collections.OrderedDict(((
-    "Singlelevel Heston 1", [
-        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
-        Bitstream("heston_sl_6x"),
-        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
-        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_observer_1.json "
-            "bitstream/heston_sl_6x.json -observe"]),(
-    "Multilevel Heston 1", [
-        Bitstream("heston_ml_5x"),
-        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
-        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
-            "software/parameters/params_zynq_demo_observer_1.json "
-            "bitstream/heston_ml_5x.json -observe"]),(
-    "Singlelevel Heston 2", [
-        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+#    "Singlelevel Heston 1", [
+#        Bitstream("heston_sl_6x"),
+#        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
+#        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
+#            "software/parameters/params_zynq_demo_observer_1.json "
+#            "bitstream/heston_sl_6x.json -observe"]),(
+#    "Multilevel Heston 1", [
+#        Bitstream("heston_ml_5x"),
+#        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
+#        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
+#            "software/parameters/params_zynq_demo_observer_1.json "
+#            "bitstream/heston_ml_5x.json -observe"]),(
+    "Singlelevel Heston", [
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_sl_6x.json -observe"]),(
-    "Multilevel Heston 2", [
+    "Multilevel Heston", [
         Bitstream("heston_ml_5x"),
         "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
         "sudo taskset -c 1 software/bin/run_heston -ml -acc "
             "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_ml_5x.json -observe"]),(
     "Clear Bitstream", [
-        #"cat bitstream/empty.bin > /dev/xdevcfg"])
         Bitstream("empty")]),(
+    "Singlelevel Bitstream", [
+        Bitstream("heston_sl_6x")]),(
     "Multilevel Bitstream", [
         Bitstream("heston_ml_5x")])
 ))
@@ -337,7 +336,8 @@ class AccPanel(QFrame):
             return (coarse_stock,)
 
     def get_plot_width(self):
-        return self.width() - 50
+        bar_width = min(self.width() * 0.25, 50)
+        return self.width() - bar_width
 
     def heston_path_to_poly(self, stocks):
         poly = []
@@ -354,6 +354,11 @@ class AccPanel(QFrame):
         #super(QFrame, self).paintEvent(event)
         QFrame.paintEvent(self, event)
         painter = QPainter(self)
+        
+        #background
+        painter.setBrush(QBrush(QColor(255, 255, 255, 220)))
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
         # text
         painter.drawText(QPoint(10, 20), self._name)
@@ -370,21 +375,28 @@ class AccPanel(QFrame):
             painter.drawText(QPoint(10, 50), 
                     "Number of steps: {}{}".format(fine, self._get_step_cnt()))
 
-
-        #TODO: draw barrier
+        # draw barrier
+        painter.setPen(QColor(255, 0, 0))
+        if self._config is not None:
+            config = self._config if self._acc_class == 'heston_sl' \
+                    else self._config['ml_params']
+            barrier = config['barrier']
+            for value in [barrier['lower'], barrier['upper']]:
+                y = self.height() - value
+                painter.drawLine(0, y, self.get_plot_width(), y)
 
         # progress bar
         if self._progress is not None:
-            painter.setBrush(QBrush(QColor(200, 200, 200)))
-            painter.setPen(QPen(QColor(Qt.black), 1))
-            x = self.get_plot_width()
-            y = int(self.height() * (1 - self._progress))
+            painter.setBrush(QBrush(QColor(255, 255, 255)))
+            painter.setPen(QPen(Qt.black, 2))
+            x = self.get_plot_width() + 1
+            y = int(self.height() * (1 - self._progress)) + 1
             painter.drawRect(x, y, self.width() - x - 1, self.height() - y - 1)
 
         # polygon
         if self._poly is not None:
             for poly in self._poly:
-                painter.setPen(QPen(QColor(Qt.black), 1))
+                painter.setPen(QPen(Qt.black, 1))
                 painter.drawPolyline(poly)
 
         self._dirty = False
@@ -414,6 +426,28 @@ class PictureLabel(QLabel):
         self._pixmap = None
         self.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
+        self._layout = QHBoxLayout()
+        self._acc_layout = None
+        self._sub_layouts = []
+        self.setLayout(self._layout)
+
+    def set_accelerators(self, accelerators):
+        # recreate box layout
+        if self._acc_layout is not None:
+            self._acc_layout.deleteLater()
+        self._acc_layout = QGridLayout()
+        self._acc_layout.setSpacing(20)
+        self._layout.addLayout(self._acc_layout)
+        
+        # add accelerators
+        cols = 2
+        for i, acc in enumerate(accelerators):
+            col_index = i % cols
+            row_index = i // cols
+            self._acc_layout.addWidget(acc, row_index, col_index)
+
+        self._update()
+
     def setPixmap(self, pixmap):
         self._pixmap = pixmap
         self._update()
@@ -425,14 +459,24 @@ class PictureLabel(QLabel):
     def _update(self):
         if self._pixmap is not None:
             w, h = self.width(), self.height()
-            super().setPixmap(self._pixmap.scaled(w, h, Qt.KeepAspectRatio))
+            scaled = self._pixmap.scaled(w, h, Qt.KeepAspectRatio)
+            super().setPixmap(scaled)
+            # adapt margins of top layout
+            w_margin = (w - scaled.width()) / 2
+            h_margin = (h - scaled.height()) / 2
+            self._layout.setContentsMargins(w_margin, h_margin, w_margin, h_margin)
+            # adapt area for CPU
+            if self._acc_layout is not None:
+                left_margin = scaled.width() * 0.275
+                spacing = scaled.width() * 0.012
+                self._acc_layout.setContentsMargins(left_margin, spacing, spacing, spacing)
+            
 
 
 class DevicePanel(QFrame):
     """ Widget showing FPGA floorplan """
     def __init__(self):
         super().__init__()
-        #self.setFrameStyle(QFrame.Box)
         self._active = False
         self._bitstream = None
 
@@ -457,9 +501,10 @@ class DevicePanel(QFrame):
             self._active = active
             self._update()
 
-    def set_bitstream(self, bitstream):
+    def set_bitstream(self, bitstream, accelerators):
         self._bitstream = bitstream
         self._update()
+        self._fpga_img.set_accelerators(accelerators)
 
     def _update(self):
         if self._bitstream is not None:
@@ -473,15 +518,8 @@ class Window(QWidget):
     def __init__(self, observer):
         super().__init__()
         self.observer = observer
-        
         self._fast_drawing = True
-        
-        # top panel (accelerators)
         self._accelerators = {}
-        self._acc_box = QHBoxLayout()
-        top_panel = QWidget()
-        top_panel.setLayout(self._acc_box)
-        top_panel.resize(100, 100)
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
@@ -508,19 +546,14 @@ class Window(QWidget):
         right_layout.addWidget(checkbox)
         right_panel.setLayout(right_layout)
         
-        # bottom panel
+        # top_layout (splitter)
         self._device_panel = DevicePanel()
         self._device_panel.resize(500, 100)
         bottom_splitter = QSplitter(Qt.Horizontal)
         bottom_splitter.addWidget(self._device_panel)
         bottom_splitter.addWidget(right_panel)
-
-        # splitter
-        splitter = QSplitter(Qt.Vertical)
-        splitter.addWidget(top_panel)
-        splitter.addWidget(bottom_splitter)
         layout = QVBoxLayout()
-        layout.addWidget(splitter)
+        layout.addWidget(bottom_splitter)
         self.setLayout(layout)
 
         # connect observer signals
@@ -545,11 +578,9 @@ class Window(QWidget):
             print("unknown event:", type, value, instance)
 
     def set_bitstream(self, bitstream):
-        self._device_panel.set_bitstream(bitstream)
-
         # delete all accelerator widgets
-        for i in reversed(range(self._acc_box.count())):
-            self._acc_box.itemAt(i).widget().deleteLater()
+        for acc in self._accelerators.values():
+            acc.deleteLater()
         self._accelerators = {}
 
         # read config file and setup accelerator widgets
@@ -558,8 +589,10 @@ class Window(QWidget):
             acc = AccPanel(instance, config[instance]["__class__"], 
                     self._fast_drawing)
             self._accelerators[instance] = acc
-            self._acc_box.addWidget(acc)
             acc.state_changed.connect(self.on_accelerator_activity_change)
+
+        self._device_panel.set_bitstream(bitstream, 
+                self._accelerators.values())
 
     def on_setup_sl(self, instance, config):
         self._accelerators[instance].set_config(config)
