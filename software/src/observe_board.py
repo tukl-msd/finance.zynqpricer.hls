@@ -71,35 +71,34 @@ class Bitstream:
 
 
 COMMAND_BUTTONS = collections.OrderedDict(((
-    "Singlelevel Heston 1", [
-        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
-        Bitstream("heston_sl_6x"),
-        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
-        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
-            "software/parameters/params_zynq_demo_observer_1.json "
-            "bitstream/heston_sl_6x.json -observe"]),(
-    "Multilevel Heston 1", [
-        Bitstream("heston_ml_5x"),
-        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
-        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
-            "software/parameters/params_zynq_demo_observer_1.json "
-            "bitstream/heston_ml_5x.json -observe"]),(
-    "Singlelevel Heston 2", [
-        #"cat bitstream/heston_sl_6x.bin > /dev/xdevcfg",
+#    "Singlelevel Heston 1", [
+#        Bitstream("heston_sl_6x"),
+#        "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
+#        "sudo taskset -c 1 software/bin/run_heston -sl -acc "
+#            "software/parameters/params_zynq_demo_observer_1.json "
+#            "bitstream/heston_sl_6x.json -observe"]),(
+#    "Multilevel Heston 1", [
+#        Bitstream("heston_ml_5x"),
+#        "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
+#        "sudo taskset -c 1 software/bin/run_heston -ml -acc "
+#            "software/parameters/params_zynq_demo_observer_1.json "
+#            "bitstream/heston_ml_5x.json -observe"]),(
+    "Singlelevel Heston", [
         Bitstream("heston_sl_6x"),
         "sudo software/bin/init_rng bitstream/heston_sl_6x.json",
         "sudo taskset -c 1 software/bin/run_heston -sl -acc "
             "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_sl_6x.json -observe"]),(
-    "Multilevel Heston 2", [
+    "Multilevel Heston", [
         Bitstream("heston_ml_5x"),
         "sudo software/bin/init_rng bitstream/heston_ml_5x.json",
         "sudo taskset -c 1 software/bin/run_heston -ml -acc "
             "software/parameters/params_zynq_demo_observer_2.json "
             "bitstream/heston_ml_5x.json -observe"]),(
     "Clear Bitstream", [
-        #"cat bitstream/empty.bin > /dev/xdevcfg"])
         Bitstream("empty")]),(
+    "Singlelevel Bitstream", [
+        Bitstream("heston_sl_6x")]),(
     "Multilevel Bitstream", [
         Bitstream("heston_ml_5x")])
 ))
@@ -337,7 +336,8 @@ class AccPanel(QFrame):
             return (coarse_stock,)
 
     def get_plot_width(self):
-        return self.width() - 50
+        bar_width = min(self.width() * 0.25, 50)
+        return self.width() - bar_width
 
     def heston_path_to_poly(self, stocks):
         poly = []
@@ -357,7 +357,7 @@ class AccPanel(QFrame):
         
         #background
         painter.setBrush(QBrush(QColor(255, 255, 255, 220)))
-        painter.setPen(QPen(Qt.black, 1))
+        painter.setPen(Qt.NoPen)
         painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
         # text
@@ -375,16 +375,23 @@ class AccPanel(QFrame):
             painter.drawText(QPoint(10, 50), 
                     "Number of steps: {}{}".format(fine, self._get_step_cnt()))
 
-
-        #TODO: draw barrier
+        # draw barrier
+        painter.setPen(QColor(255, 0, 0))
+        if self._config is not None:
+            config = self._config if self._acc_class == 'heston_sl' \
+                    else self._config['ml_params']
+            barrier = config['barrier']
+            for value in [barrier['lower'], barrier['upper']]:
+                y = self.height() - value
+                painter.drawLine(0, y, self.get_plot_width(), y)
 
         # progress bar
         if self._progress is not None:
             painter.setBrush(QBrush(QColor(255, 255, 255)))
             painter.setPen(QPen(Qt.black, 2))
-            x = self.get_plot_width()
-            y = int(self.height() * (1 - self._progress))
-            painter.drawRect(x, y, self.width() - x - 2, self.height() - y - 2)
+            x = self.get_plot_width() + 1
+            y = int(self.height() * (1 - self._progress)) + 1
+            painter.drawRect(x, y, self.width() - x - 1, self.height() - y - 1)
 
         # polygon
         if self._poly is not None:
