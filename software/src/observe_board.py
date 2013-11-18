@@ -565,6 +565,8 @@ class Window(QWidget):
         self._fast_drawing = True
         self._accelerators = {}
         self._last_params = None
+        self._repeat = False
+        self._last_run_cmd = None
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
@@ -585,10 +587,20 @@ class Window(QWidget):
         self._console.setFont(font)
         self._console.setReadOnly(True)
         right_layout.addWidget(self._console, stretch=1)
-        checkbox = QCheckBox("fast path generation")
-        checkbox.setCheckState(Qt.Checked)
-        checkbox.stateChanged.connect(self.on_fast_drawing_state_changed)
-        right_layout.addWidget(checkbox)
+        checkbox_layout = QHBoxLayout()
+        checkbox_fp = QCheckBox("fast path generation")
+        checkbox_fp.setCheckState(Qt.Checked)
+        checkbox_fp.stateChanged.connect(self.on_fast_drawing_state_changed)
+        checkbox_repeat = QCheckBox("repeat")
+        checkbox_repeat.stateChanged.connect(self.on_repeat_state_changed)
+        self._repeat_timer = QTimer()
+        self._repeat_timer.setSingleShot(True)
+        self._repeat_timer.setInterval(1000) # ms
+        self._repeat_timer.timeout.connect(self.on_repeat_timer)
+        checkbox_layout.addWidget(checkbox_fp)
+        checkbox_layout.addWidget(checkbox_repeat)
+        checkbox_layout.addStretch(1)
+        right_layout.addLayout(checkbox_layout)
         right_panel.setLayout(right_layout)
         
         # top_layout (splitter)
@@ -668,6 +680,8 @@ class Window(QWidget):
             else:
                 cmd = item
             self.observer.send_cmd(cmd)
+        self._last_run_cmd = name
+        self._repeat_timer.start()
 
     def set_button_enabled(self, enabled):
         for button in self._buttons.values():
@@ -678,6 +692,10 @@ class Window(QWidget):
                 for acc in self._accelerators.values())
         self._device_panel.set_active(activity)
         self.set_button_enabled(not activity)
+        if activity:
+            self._repeat_timer.stop()
+        else:
+            self._repeat_timer.start()
 
     def on_console_connected(self):
         self.set_button_enabled(True)
@@ -686,6 +704,15 @@ class Window(QWidget):
         self._fast_drawing = state == Qt.Checked
         for acc in self._accelerators.values():
             acc.set_fast_drawing(self._fast_drawing)
+
+    def on_repeat_state_changed(self, state):
+        self._repeat = state == Qt.Checked
+
+    def on_repeat_timer(self):
+        if self._repeat:
+            cmds = list(COMMAND_BUTTONS)
+            next_cmd = cmds[(cmds.index(self._last_run_cmd) + 1) % len(cmds)]
+            self.on_command_button(next_cmd)
 
 
 
