@@ -579,7 +579,7 @@ class Window(QWidget):
         right_panel = QWidget()
         right_layout = QVBoxLayout()
         right_layout.addLayout(button_layout)
-        self._console = QTextEdit()
+        self._console = QPlainTextEdit()
         font = QFont("Monospace")
         font.setStyleHint(QFont.TypeWriter)
         self._console.setFont(font)
