@@ -44,9 +44,11 @@ public:
 	unsigned register_accelerator(const std::string &instance);
 	void clear_accelerators();
 
-	void setup_sl(unsigned index, HestonParamsSL sl_params);
+	void setup_sl(unsigned index, HestonParamsSL sl_params,
+			bool use_last_params=false);
 	void setup_ml(unsigned index, HestonParamsML ml_params,
-			uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel);
+			uint32_t step_cnt_fine, uint32_t path_cnt, bool do_multilevel,
+			bool use_last_params=false);
 	void register_new_path(unsigned index);
 	void all_paths_done(unsigned index);
 

@@ -205,6 +205,7 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 	// start accelerators
 	uint32_t acc_path_cnt = path_cnt / accelerators.size();
 	int path_cnt_remainder = path_cnt % accelerators.size();
+	bool first = true;
 	for (auto acc_name: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
 		start_heston_accelerator(bitstream[acc_name], 
@@ -215,7 +216,8 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		// notify observer
 		unsigned index = observer.register_accelerator(acc_name);
 		observer.setup_ml(index, ml_params, step_cnt_fine, 
-				params_hw.path_cnt, do_multilevel);
+				params_hw.path_cnt, do_multilevel, !first);
+		first = false;
 	}
 
 	// setup read iterator
