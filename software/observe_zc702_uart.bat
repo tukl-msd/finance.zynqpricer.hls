@@ -1,0 +1,1 @@
+src\observe_board.py "plink -load uart_zc702" "~/finance.zynqpricer.hls"

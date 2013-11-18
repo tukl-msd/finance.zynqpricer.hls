@@ -187,23 +187,29 @@ class RemoteObserver(QThread):
         self._writer_queue.put((msg + '\n').encode(remote_encoding))
 
     def close(self):
-        self.send_cmd("exit")
+        #self.send_cmd("exit")
+        self._p.terminate()
 
     def run(self):
         self._p = subprocess.Popen(shlex.split(self.pty_cmd), 
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
                 stderr=sys.stderr)
         reader = self._line_reader(self._p)
-        # wait for welcome message
-        for line in reader:
-            if line.startswith('Last login:'):
-                break
 
         writer = StreamWriterThread(self._p.stdin)
         writer.start()
         self._writer_queue = writer.get_queue()
-        self.send_cmd("cd {}".format(shlex.quote(self.root_dir)))
 
+        # wait for response
+        self.send_cmd("")
+        self.send_cmd("")
+        for line in reader:
+            if '@board' in line:
+                break
+            else:
+                print(line)
+        self.send_cmd("cd {}".format(self.root_dir))
+        
         self.connected.emit()
     
         for line in reader:
@@ -212,10 +218,10 @@ class RemoteObserver(QThread):
             except ValueError:
                 pass
             else:
-                if data["__class__"] == "observer":
-                    self.event.emit(data["__event__"], 
-                            json.dumps(data["__value__"]),
-                            data.get("__instance__", None))
+                if data.get("cls", '') == "observer":
+                    self.event.emit(data["evt"], 
+                            json.dumps(data["val"]),
+                            data.get("inst", None))
         writer.stop()
 
 
@@ -558,6 +564,7 @@ class Window(QWidget):
         self.observer = observer
         self._fast_drawing = True
         self._accelerators = {}
+        self._last_params = None
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
@@ -633,10 +640,16 @@ class Window(QWidget):
                 self._accelerators.values())
 
     def on_setup_sl(self, instance, config):
+        if len(config) == 0:
+            config = self._last_params
         self._accelerators[instance].set_config(config)
+        self._last_params = config
 
     def on_setup_ml(self, instance, config):
+        if 'ml_params' not in config:
+            config['ml_params'] = self._last_params
         self._accelerators[instance].set_config(config)
+        self._last_params = config['ml_params']
 
     def on_new_paths(self, instance, new_count):
         self._accelerators[instance].new_paths(new_count)
