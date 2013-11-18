@@ -219,6 +219,14 @@ class RemoteObserver(QThread):
         writer.stop()
 
 
+class AccDrawData:
+    """ collect all pre generatedd objects for fast drawing in AccPanel """
+    def __init__(self, poly=None, stocks=None, barrier=None, hits=None):
+        self.poly = poly or []
+        self.stocks = stocks or []
+        self.barriers = barrier or []
+        self.hits = hits or []
+
 class AccPanel(QFrame):
     """ Widget visulizing accelerator behaviour as matplotlib graph """
     state_changed = Signal(bool)
@@ -229,7 +237,7 @@ class AccPanel(QFrame):
         self._acc_class = acc_class
         self._fast_drawing = fast_drawing
         self._config = None
-        self._poly = None
+        self._draw_data = AccDrawData()
         self._progress = None
         self._dirty = False # new poly but not yet redrawn
         self.setFrameStyle(QFrame.Box)
@@ -255,9 +263,9 @@ class AccPanel(QFrame):
 
     def set_config(self, config):
         self._config = config
-        self._poly = None
         self._progress = 0
         self._set_activity(self._get_path_cnt() != 0)
+        self._draw_data = self.get_draw_data()
         self.update()
 
     def _set_activity(self, activity):
@@ -270,7 +278,7 @@ class AccPanel(QFrame):
     
     def set_fast_drawing(self, fast_drawing):
         self._fast_drawing = fast_drawing
-        self._poly = None
+        self._draw_data = self.get_draw_data()
         self.update()
 
     def get_heston_path(self):
@@ -339,16 +347,43 @@ class AccPanel(QFrame):
         bar_width = min(self.width() * 0.25, 50)
         return self.width() - bar_width
 
-    def heston_path_to_poly(self, stocks):
-        poly = []
-        for stock in stocks:
-            t = np.linspace(0, self.get_plot_width(), len(stock))
-            s = self.height() - stock
-            poly.append(QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s)))))
-        return poly
+    def get_draw_data(self, stocks=None):
+        if stocks is not None:
+            # generate polygon
+            poly = []
+            for stock in stocks:
+                t = np.linspace(0, self.get_plot_width(), len(stock))
+                s = self.height() - stock
+                poly.append(QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s)))))
+        else:
+            poly = []
+            
+        # generate barrier info
+        barriers = []
+        barrier_hits = []
+        if self._config is not None:
+            config = self._config if self._acc_class == 'heston_sl' \
+                    else self._config['ml_params']
+            for type in ['lower', 'upper']:
+                value = config['barrier'][type]
+                y = self.height() - value
+                barriers.append(y)
+                # get first point where path is hitting barrier
+                if stocks is not None:
+                    for stock in stocks:
+                        t = np.linspace(0, self.get_plot_width(), len(stock))
+                        if type == 'lower':
+                            hits = t[stock < value]
+                        else:
+                            hits = t[stock > value]
+                        if (len(hits) > 0):
+                            x = hits[0]
+                            barrier_hits.append((x, y))
+        
+        return AccDrawData(poly, stocks, barriers, barrier_hits)
 
     def resizeEvent(self, event):
-        self._poly = None
+        self._draw_data = self.get_draw_data()
 
     def paintEvent(self, event):
         #super(QFrame, self).paintEvent(event)
@@ -376,14 +411,17 @@ class AccPanel(QFrame):
                     "Number of steps: {}{}".format(fine, self._get_step_cnt()))
 
         # draw barrier
-        painter.setPen(QColor(255, 0, 0))
-        if self._config is not None:
-            config = self._config if self._acc_class == 'heston_sl' \
-                    else self._config['ml_params']
-            barrier = config['barrier']
-            for value in [barrier['lower'], barrier['upper']]:
-                y = self.height() - value
-                painter.drawLine(0, y, self.get_plot_width(), y)
+        if self._draw_data is not None:
+            painter.setPen(QColor(255, 0, 0))
+            for barrier in self._draw_data.barriers:
+                painter.drawLine(0, barrier, self.get_plot_width(), barrier)
+
+        # draw hit points
+        if self._draw_data is not None:
+            painter.setPen(QPen(QColor(255, 0, 0), 1.5))
+            painter.setBrush(Qt.NoBrush)
+            for x, y in self._draw_data.hits:
+                painter.drawEllipse(QPointF(x, y), 7, 7)
 
         # progress bar
         if self._progress is not None:
@@ -394,8 +432,8 @@ class AccPanel(QFrame):
             painter.drawRect(x, y, self.width() - x - 1, self.height() - y - 1)
 
         # polygon
-        if self._poly is not None:
-            for poly in self._poly:
+        if self._draw_data is not None:
+            for poly in self._draw_data.poly:
                 painter.setPen(QPen(Qt.black, 1))
                 painter.drawPolyline(poly)
 
@@ -408,7 +446,7 @@ class AccPanel(QFrame):
         if not self._dirty:
             self._dirty = True
             stock = self.get_heston_path()
-            self._poly = self.heston_path_to_poly(stock)
+            self._draw_data = self.get_draw_data(stock)
 
             if DEBUG_DRAW_SPEED:
                 print(1/(time.time() - self._t))
