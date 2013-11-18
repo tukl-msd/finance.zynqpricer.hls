@@ -353,13 +353,16 @@ class AccPanel(QFrame):
         bar_width = min(self.width() * 0.25, 50)
         return self.width() - bar_width
 
+    def get_scale(self):
+        return self.height() / 300.
+
     def get_draw_data(self, stocks=None):
         if stocks is not None:
             # generate polygon
             poly = []
             for stock in stocks:
                 t = np.linspace(0, self.get_plot_width(), len(stock))
-                s = self.height() - stock
+                s = self.height() - stock * self.get_scale()
                 poly.append(QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s)))))
         else:
             poly = []
@@ -372,7 +375,7 @@ class AccPanel(QFrame):
                     else self._config['ml_params']
             for type in ['lower', 'upper']:
                 value = config['barrier'][type]
-                y = self.height() - value
+                y = self.height() - value * self.get_scale()
                 barriers.append(y)
                 # get first point where path is hitting barrier
                 if stocks is not None:
@@ -402,6 +405,7 @@ class AccPanel(QFrame):
         painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
         # text
+        painter.setPen(Qt.black)
         painter.drawText(QPoint(10, 20), self._name)
         if self._config is not None:
             painter.drawText(QPoint(10, 35), 
@@ -565,6 +569,8 @@ class Window(QWidget):
         self._fast_drawing = True
         self._accelerators = {}
         self._last_params = None
+        self._repeat = False
+        self._last_run_cmd = None
 
         # right panel (buttons & console)
         button_layout = QHBoxLayout()
@@ -585,10 +591,20 @@ class Window(QWidget):
         self._console.setFont(font)
         self._console.setReadOnly(True)
         right_layout.addWidget(self._console, stretch=1)
-        checkbox = QCheckBox("fast path generation")
-        checkbox.setCheckState(Qt.Checked)
-        checkbox.stateChanged.connect(self.on_fast_drawing_state_changed)
-        right_layout.addWidget(checkbox)
+        checkbox_layout = QHBoxLayout()
+        checkbox_fp = QCheckBox("fast path generation")
+        checkbox_fp.setCheckState(Qt.Checked)
+        checkbox_fp.stateChanged.connect(self.on_fast_drawing_state_changed)
+        checkbox_repeat = QCheckBox("repeat")
+        checkbox_repeat.stateChanged.connect(self.on_repeat_state_changed)
+        self._repeat_timer = QTimer()
+        self._repeat_timer.setSingleShot(True)
+        self._repeat_timer.setInterval(1000) # ms
+        self._repeat_timer.timeout.connect(self.on_repeat_timer)
+        checkbox_layout.addWidget(checkbox_fp)
+        checkbox_layout.addWidget(checkbox_repeat)
+        checkbox_layout.addStretch(1)
+        right_layout.addLayout(checkbox_layout)
         right_panel.setLayout(right_layout)
         
         # top_layout (splitter)
@@ -630,14 +646,15 @@ class Window(QWidget):
 
         # read config file and setup accelerator widgets
         config = bitstream.get_config()
+        sorted_acc_panels = []
         for instance in sorted(config):
             acc = AccPanel(instance, config[instance]["__class__"], 
                     self._fast_drawing)
             self._accelerators[instance] = acc
+            sorted_acc_panels.append(acc)
             acc.state_changed.connect(self.on_accelerator_activity_change)
 
-        self._device_panel.set_bitstream(bitstream, 
-                self._accelerators.values())
+        self._device_panel.set_bitstream(bitstream, sorted_acc_panels)
 
     def on_setup_sl(self, instance, config):
         if len(config) == 0:
@@ -668,6 +685,8 @@ class Window(QWidget):
             else:
                 cmd = item
             self.observer.send_cmd(cmd)
+        self._last_run_cmd = name
+        self._repeat_timer.start()
 
     def set_button_enabled(self, enabled):
         for button in self._buttons.values():
@@ -678,6 +697,10 @@ class Window(QWidget):
                 for acc in self._accelerators.values())
         self._device_panel.set_active(activity)
         self.set_button_enabled(not activity)
+        if activity:
+            self._repeat_timer.stop()
+        else:
+            self._repeat_timer.start()
 
     def on_console_connected(self):
         self.set_button_enabled(True)
@@ -686,6 +709,15 @@ class Window(QWidget):
         self._fast_drawing = state == Qt.Checked
         for acc in self._accelerators.values():
             acc.set_fast_drawing(self._fast_drawing)
+
+    def on_repeat_state_changed(self, state):
+        self._repeat = state == Qt.Checked
+
+    def on_repeat_timer(self):
+        if self._repeat:
+            cmds = list(COMMAND_BUTTONS)
+            next_cmd = cmds[(cmds.index(self._last_run_cmd) + 1) % len(cmds)]
+            self.on_command_button(next_cmd)
 
 
 
