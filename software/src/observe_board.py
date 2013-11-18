@@ -353,13 +353,16 @@ class AccPanel(QFrame):
         bar_width = min(self.width() * 0.25, 50)
         return self.width() - bar_width
 
+    def get_scale(self):
+        return self.height() / 300.
+
     def get_draw_data(self, stocks=None):
         if stocks is not None:
             # generate polygon
             poly = []
             for stock in stocks:
                 t = np.linspace(0, self.get_plot_width(), len(stock))
-                s = self.height() - stock
+                s = self.height() - stock * self.get_scale()
                 poly.append(QPolygonF(list(map(lambda p: QPointF(*p), zip(t, s)))))
         else:
             poly = []
@@ -372,7 +375,7 @@ class AccPanel(QFrame):
                     else self._config['ml_params']
             for type in ['lower', 'upper']:
                 value = config['barrier'][type]
-                y = self.height() - value
+                y = self.height() - value * self.get_scale()
                 barriers.append(y)
                 # get first point where path is hitting barrier
                 if stocks is not None:
@@ -402,6 +405,7 @@ class AccPanel(QFrame):
         painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
         # text
+        painter.setPen(Qt.black)
         painter.drawText(QPoint(10, 20), self._name)
         if self._config is not None:
             painter.drawText(QPoint(10, 35), 
@@ -642,14 +646,15 @@ class Window(QWidget):
 
         # read config file and setup accelerator widgets
         config = bitstream.get_config()
+        sorted_acc_panels = []
         for instance in sorted(config):
             acc = AccPanel(instance, config[instance]["__class__"], 
                     self._fast_drawing)
             self._accelerators[instance] = acc
+            sorted_acc_panels.append(acc)
             acc.state_changed.connect(self.on_accelerator_activity_change)
 
-        self._device_panel.set_bitstream(bitstream, 
-                self._accelerators.values())
+        self._device_panel.set_bitstream(bitstream, sorted_acc_panels)
 
     def on_setup_sl(self, instance, config):
         if len(config) == 0:
