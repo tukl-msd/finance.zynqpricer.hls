@@ -15,14 +15,14 @@
 		"upper": 200
 	},
 	"simulation_sl": {
-		"step_cnt": 2000,
-		"path_cnt": 2000000
+		"step_cnt": 1000,
+		"path_cnt": 6000000
 	},
 	"simulation_ml": {
 		"start_level": 1,
 		"ml_constant": 4,
 		"path_cnt_start": 10000,
-		"epsilon": 0.03
+		"epsilon": 0.022
 	},
 	"reference": {
 		"price": 0.74870,
