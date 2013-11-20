@@ -69,7 +69,8 @@ class Bitstream:
                 self._config = json.load(f)
         return self._config
 
-
+REPEAT_DELAY = 7 #seconds
+REPEAT_CMD = ["Singlelevel Heston", "Multilevel Heston"]#, "Clear Bitstream"]
 COMMAND_BUTTONS = collections.OrderedDict(((
 #    "Singlelevel Heston 1", [
 #        Bitstream("heston_sl_6x"),
@@ -599,7 +600,7 @@ class Window(QWidget):
         checkbox_repeat.stateChanged.connect(self.on_repeat_state_changed)
         self._repeat_timer = QTimer()
         self._repeat_timer.setSingleShot(True)
-        self._repeat_timer.setInterval(10000) # ms
+        self._repeat_timer.setInterval(round(REPEAT_DELAY * 1000)) # ms
         self._repeat_timer.timeout.connect(self.on_repeat_timer)
         checkbox_layout.addWidget(checkbox_fp)
         checkbox_layout.addWidget(checkbox_repeat)
@@ -716,7 +717,11 @@ class Window(QWidget):
     def on_repeat_timer(self):
         if self._repeat:
             cmds = list(COMMAND_BUTTONS)
-            next_cmd = cmds[(cmds.index(self._last_run_cmd) + 1) % len(cmds)]
+            next_cmd = self._last_run_cmd
+            while True:
+                next_cmd = cmds[(cmds.index(next_cmd) + 1) % len(cmds)]
+                if next_cmd in REPEAT_CMD:
+                    break
             self.on_command_button(next_cmd)
 
 
