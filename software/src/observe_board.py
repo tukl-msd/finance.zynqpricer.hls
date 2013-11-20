@@ -599,7 +599,7 @@ class Window(QWidget):
         checkbox_repeat.stateChanged.connect(self.on_repeat_state_changed)
         self._repeat_timer = QTimer()
         self._repeat_timer.setSingleShot(True)
-        self._repeat_timer.setInterval(1000) # ms
+        self._repeat_timer.setInterval(10000) # ms
         self._repeat_timer.timeout.connect(self.on_repeat_timer)
         checkbox_layout.addWidget(checkbox_fp)
         checkbox_layout.addWidget(checkbox_repeat)

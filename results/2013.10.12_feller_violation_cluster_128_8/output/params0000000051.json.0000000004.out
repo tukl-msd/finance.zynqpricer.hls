@@ -1,8 +1,0 @@
-{
-  "multi-level": [
-    {"step_cnt": 1024, "stats": {"mean": 0.00352617, "variance": 15.7728, "cnt": 5000000}, "duration": 62.4208, "sigma": 0.00177611, "var_sigma": 0.0099756}, 
-    {"step_cnt": 4096, "stats": {"mean": -0.00089272, "variance": 5.41996, "cnt": 5000000}, "duration": 248.822, "sigma": 0.00104115, "var_sigma": 0.00342788}, 
-    {"step_cnt": 16384, "stats": {"mean": -0.000955285, "variance": 2.44015, "cnt": 5000000}, "duration": 994.941, "sigma": 0.000698592, "var_sigma": 0.00154329}, 
-    {"step_cnt": 65536, "stats": {"mean": 0.000180987, "variance": 0.295948, "cnt": 5000000}, "duration": 3976.07, "sigma": 0.000243289, "var_sigma": 0.000187174}
-  ]
-}
