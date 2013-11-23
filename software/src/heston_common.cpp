@@ -21,6 +21,8 @@ Statistics::Statistics(double mean, double variance, uint64_t cnt)
 
 Statistics& Statistics::operator+=(const Statistics &rhs) {
 	uint64_t new_cnt = cnt + rhs.cnt;
+	if (new_cnt == 0)
+		return *this;
 	double new_mean = (cnt * mean + rhs.mean * rhs.cnt) / new_cnt;
 	variance = ((cnt - 1) * variance + 
 			rhs.variance * (rhs.cnt - 1) + 
@@ -38,8 +40,8 @@ Statistics& Statistics::operator*=(const double &rhs) {
 }
 
 std::ostream& operator<<(std::ostream& o, const Statistics &s) {
-	return o << "{mean: " << s.mean << ", variance: " <<
-			s.variance << ", cnt: " << s.cnt << "}";
+	return o << "<\"mean\": " << s.mean << ", \"variance\": " <<
+			s.variance << ", \"cnt\": " << s.cnt << ">";
 }
 
 

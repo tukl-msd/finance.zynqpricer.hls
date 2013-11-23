@@ -7,44 +7,13 @@
 //
 
 #include "heston_ml_both.hpp"
+#include "observer.hpp"
 
 #include <stdint.h>
 
 #include <vector>
 #include <chrono>
 #include <cmath>
-
-
-Pricer::Pricer(const bool do_multilevel, const HestonParams params) 
-		: do_multilevel(do_multilevel), params(params),
-			price_mean(0), price_variance(0), price_cnt(0) {
-}
-
-void Pricer::handle_path(float fine_path, float coarse_path) {
-	float val = get_payoff(fine_path) - 
-			(do_multilevel ? get_payoff(coarse_path) : 0);
-	update_online_statistics(val);
-}
-
-Statistics Pricer::get_statistics() {
-	Statistics stats;
-	stats.mean = price_mean;
-	stats.variance =price_variance / (price_cnt - 1);
-	stats.cnt = price_cnt;
-	return stats;
-}
-
-float Pricer::get_payoff(float path) {
-	return std::max(0.f, std::exp(path) - (float) params.strike_price);
-}
-
-void Pricer::update_online_statistics(float val) {
-	// See Knuth TAOCP vol 2, 3rd edition, page 232
-	++price_cnt;
-	double delta = val - price_mean;
-	price_mean += delta / price_cnt;
-	price_variance += delta * (val - price_mean);
-};
 
 
 /**
@@ -67,8 +36,9 @@ void print_performance(std::vector<Statistics> stats,
 	for (int level = 0; level < stats.size(); ++level) {
 		level_duration_sum += durations[level];
 	}
-	std::cout << "Control overhead are " << duration - level_duration_sum 
-			<< "seconds" << std::endl;
+	std::cout << std::endl;
+	std::cout << "Control overhead is " << duration - level_duration_sum 
+			<< " seconds" << std::endl;
 	std::cout << std::endl;
 	// print steps / sec
 	uint64_t steps = 0;
@@ -112,7 +82,8 @@ void print_performance(std::vector<Statistics> stats,
  */
 double heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
-		const uint64_t, const bool, const uint32_t)> ml_kernel) {
+		const uint64_t, const bool, const uint32_t)> ml_kernel,
+		bool do_print) {
 	auto start_f = std::chrono::steady_clock::now();
 
 	int current_level = 0;
@@ -139,10 +110,14 @@ double heston_ml_control(const HestonParamsML &ml_params,
 			if (path_cnt_todo > 0) {
 				uint32_t step_cnt = get_time_step_cnt(level, ml_params);
 				bool do_multilevel = (level > 0);
-				std::cout << "current_level " << current_level <<
-						" level " << level << " step_cnt " << 
-						step_cnt << " path_cnt " << 
-						path_cnt_todo << std::endl;
+				if (do_print) {
+					std::cout << "current_level " << current_level <<
+							" level " << level << " step_cnt " << 
+							step_cnt << " path_cnt " << 
+							path_cnt_todo << ": " << std::flush;
+					if (Observer::getInstance().get_enabled())
+						std::cout << std::endl;
+				}
 				auto start = std::chrono::steady_clock::now();
 				Statistics new_stats = ml_kernel(ml_params, step_cnt, 
 						path_cnt_todo, do_multilevel, ml_params.ml_constant);
@@ -152,7 +127,8 @@ double heston_ml_control(const HestonParamsML &ml_params,
 
 				// update variance and mean
 				stats[level] += new_stats;
-				std::cout << new_stats << std::endl;
+				if (do_print)
+					std::cout << new_stats << std::endl << std::flush;
 			}
 		}
 
@@ -160,7 +136,7 @@ double heston_ml_control(const HestonParamsML &ml_params,
 			first_iteration_on_level = false;
 			for (int level = 0; level <= current_level; ++level) {
 				double sum = 0;
-				for (int l = 0; l <= level; ++l)
+				for (int l = 0; l <= current_level; ++l)
 					sum += sqrt(stats[l].variance / (ml_params.time_to_maturity /
 							get_time_step_cnt(l, ml_params)));
 				path_cnt_opt[level] = std::ceil(2 * 
@@ -185,6 +161,7 @@ double heston_ml_control(const HestonParamsML &ml_params,
 	double r = sum * exp(-ml_params.riskless_rate * ml_params.time_to_maturity);
 
 	auto end_f = std::chrono::steady_clock::now();
-	print_performance(stats, ml_params, durations, start_f, end_f);
+	if (do_print)
+		print_performance(stats, ml_params, durations, start_f, end_f);
 	return r;
 }

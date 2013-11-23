@@ -13,29 +13,10 @@
 
 #include <functional>
 
-/**
- * Accumulates all log prices from all streams and calculates
- * all the multi-level metrics on the fly
- */
-class Pricer {
-public:
-	Pricer(const bool do_multilevel, const HestonParams params);
-	void handle_path(float fine_path, float coarse_path=0);
-	Statistics get_statistics();
-private:
-	float get_payoff(float path);
-	void update_online_statistics(float val);
-
-	const bool do_multilevel;
-	const HestonParams params;
-
-	double price_mean;
-	double price_variance;
-	uint32_t price_cnt;
-};
 
 double heston_ml_control(const HestonParamsML &ml_params,
 		std::function<Statistics(const HestonParamsML, const uint32_t, 
-		const uint64_t, const bool, const uint32_t)> ml_kernel);
+		const uint64_t, const bool, const uint32_t)> ml_kernel,
+		bool do_print=true);
 
 #endif

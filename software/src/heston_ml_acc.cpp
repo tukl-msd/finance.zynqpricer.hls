@@ -8,8 +8,10 @@
 
 #include "iodev.hpp"
 #include "json_helper.hpp"
+#include "heston_common.hpp"
 #include "heston_both_acc.hpp"
 #include "heston_ml_both.hpp"
+#include "observer.hpp"
 
 #include "json/json.h"
 
@@ -67,7 +69,7 @@ struct HestonParamsHWML {
 class ResultStreamParser {
 public:
 	ResultStreamParser(const uint32_t path_cnt_requested, 
-			const bool do_multilevel, Pricer &pricer)
+			const bool do_multilevel, Pricer<float> &pricer)
 			: path_cnt_requested(path_cnt_requested),
 			  do_multilevel(do_multilevel), 
 			  pricer(pricer) {
@@ -127,7 +129,7 @@ private:
 
 	const uint32_t path_cnt_requested;
 	const bool do_multilevel;
-	Pricer &pricer;
+	Pricer<float> &pricer;
 
 	uint32_t curr_block_position = 0;
 	bool is_curr_block_fine = true;
@@ -182,28 +184,40 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		0};
 
 	// find accelerators
-	std::vector<Json::Value> accelerators;
+	std::vector<std::string> accelerators;
 	std::vector<Json::Value> fifos;
-	for (auto component: bitstream)
+	for (auto name: bitstream.getMemberNames()) {
+		auto component = bitstream[name];
 		if (component["__class__"] == "heston_ml") {
-			accelerators.push_back(component);
+			accelerators.push_back(name);
 			fifos.push_back(component["axi_fifo"]);
 		}
+	}
 	if (accelerators.size() == 0)
 		throw std::runtime_error("no accelerators found");
 
 	// setup pricer and parser
-	Pricer pricer(do_multilevel, p);
+	Pricer<float> pricer(do_multilevel, p);
 	std::vector<ResultStreamParser> parsers;
+
+	auto &observer = Observer::getInstance();
 
 	// start accelerators
 	uint32_t acc_path_cnt = path_cnt / accelerators.size();
 	int path_cnt_remainder = path_cnt % accelerators.size();
-	for (auto acc: accelerators) {
+	bool first = true;
+	for (auto acc_name: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
-		start_heston_accelerator(acc, &params_hw, sizeof(params_hw));
+		start_heston_accelerator(bitstream[acc_name], 
+				&params_hw, sizeof(params_hw));
 		parsers.push_back(ResultStreamParser(params_hw.path_cnt, 
 				do_multilevel, pricer));
+		
+		// notify observer
+		unsigned index = observer.register_accelerator(acc_name);
+		observer.setup_ml(index, ml_params, step_cnt_fine, 
+				params_hw.path_cnt, do_multilevel, !first);
+		first = false;
 	}
 
 	// setup read iterator
@@ -226,8 +240,14 @@ Statistics heston_ml_hw_kernel(const Json::Value bitstream,
 		// read everything from iterator
 		while (read_it.next(price, index)) {
 			parsers[index].write(price);
+			observer.register_new_path(index);
 		}
 	}
+
+	for (unsigned index = 0; index < accelerators.size(); ++index)
+		observer.all_paths_done(index);
+	observer.clear_accelerators();
+
 	return pricer.get_statistics();
 }
 

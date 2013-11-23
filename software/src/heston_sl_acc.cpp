@@ -9,6 +9,7 @@
 #include "iodev.hpp"
 #include "json_helper.hpp"
 #include "heston_both_acc.hpp"
+#include "observer.hpp"
 
 #include "json/json.h"
 
@@ -73,20 +74,33 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 		(uint32_t) p.path_cnt};
 
 	// find accelerators
-	std::vector<Json::Value> accelerators;
+	std::vector<std::string> accelerators;
 	std::vector<Json::Value> fifos;
-	for (auto component: bitstream)
+	for (auto name: bitstream.getMemberNames()) {
+		auto component = bitstream[name];
 		if (component["__class__"] == "heston_sl") {
-			accelerators.push_back(component);
+			accelerators.push_back(name);
 			fifos.push_back(component["axi_fifo"]);
 		}
+	}
+	if (accelerators.size() == 0)
+		throw std::runtime_error("no accelerators found");
+
+	auto &observer = Observer::getInstance();
 
 	// start accelerators
 	uint32_t acc_path_cnt = p.path_cnt / accelerators.size();
 	int path_cnt_remainder = p.path_cnt % accelerators.size();
-	for (auto acc: accelerators) {
+	for (auto acc_name: accelerators) {
 		params_hw.path_cnt = acc_path_cnt + (path_cnt_remainder-- > 0 ? 1 : 0);
-		start_heston_accelerator(acc, &params_hw, sizeof(params_hw));
+		start_heston_accelerator(bitstream[acc_name], 
+				&params_hw, sizeof(params_hw));
+
+		// notify observer
+		HestonParamsSL params_obs = sl_params;
+		params_obs.path_cnt = params_hw.path_cnt;
+		unsigned index = observer.register_accelerator(acc_name);
+		observer.setup_sl(index, params_obs);
 	}
 
 	// setup read iterator
@@ -95,10 +109,17 @@ float heston_sl_hw(Json::Value bitstream, HestonParamsSL sl_params) {
 	// calculate result
 	double result = 0;
 	float price;
-	while (read_it.next(price)) {
+	unsigned index;
+	while (read_it.next(price, index)) {
 		result += std::max(0.f, std::exp(price) - (float) p.strike_price);
+		observer.register_new_path(index);
 	}
 	result *= std::exp(-p.riskless_rate * p.time_to_maturity) / p.path_cnt;
+
+	for (unsigned index = 0; index < accelerators.size(); ++index)
+		observer.all_paths_done(index);
+	observer.clear_accelerators();
+
 	return result;
 }
 

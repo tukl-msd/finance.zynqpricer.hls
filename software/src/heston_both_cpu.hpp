@@ -22,10 +22,11 @@
 #include <future>
 
 #include "heston_common.hpp"
-#include "heston_ml_both.hpp"
+
 
 
 std::mt19937 *get_rng();
+
 
 template<typename calc_t>
 struct HestonParamsPrecalc {
@@ -68,9 +69,9 @@ void get_atithetic_rn(calc_t (&z_stock)[BLOCK_SIZE],
 		calc_t (&z_vola)[BLOCK_SIZE], const unsigned upper_i,
 		std::mt19937 *rng) {
 	for (unsigned i = 0; i < upper_i; i += 2) {
-		calc_t z1 = (calc_t) Ziggurat<calc_t>::
+		calc_t z1 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
-		calc_t z2 = (calc_t) Ziggurat<calc_t>::
+		calc_t z2 = (calc_t) Ziggurat<double>::
 				gsl_ran_gaussian_ziggurat(*rng);
 		z_stock[i] = z1;
 		z_stock[i + 1] = -z1;
@@ -153,13 +154,13 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 		std::cout << "ERROR: block size has to be even" << std::endl;
 		exit(-1);
 	}
-	if (step_cnt % ml_constant != 0) {
+	if (do_multilevel && (step_cnt % ml_constant != 0)) {
 		std::cout << "ERROR: step_cnt % ml_constant != 0" << std::endl;
 		exit(-1);
 	}
 	std::mt19937 *rng = get_rng();
 	calc_t z_stock_coarse[BLOCK_SIZE], z_vola_coarse[BLOCK_SIZE];
-	Pricer pricer(do_multilevel, p);
+	Pricer<calc_t> pricer(do_multilevel, p);
 	for (unsigned i = 0; i < BLOCK_SIZE; ++i)
 		z_stock_coarse[i] = z_vola_coarse[i] = 0;
 	for (uint64_t path = 0; path < path_cnt; path += BLOCK_SIZE) {
@@ -186,17 +187,22 @@ Statistics heston_cpu_kernel_serial(const HestonParams &p,
 			
 			// calc coarse
 			if (do_multilevel) {
-				if (step % ml_constant == 0) {
-					calculate_next_step(stock_coarse, vola_coarse, 
-							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
-							upper_i, p_precalc_coarse);
-					for (unsigned i = 0; i < upper_i; ++i)
-						z_stock_coarse[i] = z_vola_coarse[i] = 0;
+				
+				if (step % ml_constant == 1) { // first coarse step
+					for (unsigned i = 0; i < upper_i; ++i) {
+						z_stock_coarse[i] = z_stock[i];
+						z_vola_coarse[i] = z_vola[i];
+					}
 				} else {
 					for (unsigned i = 0; i < upper_i; ++i) {
 						z_stock_coarse[i] += z_stock[i];
 						z_vola_coarse[i] += z_vola[i];
 					}
+				}
+				if (step % ml_constant == 0) { // last coarse step
+					calculate_next_step(stock_coarse, vola_coarse, 
+							barrier_hit_coarse, z_stock_coarse, z_vola_coarse, 
+							upper_i, p_precalc_coarse);
 				}
 			}
 		}
@@ -234,12 +240,10 @@ Statistics heston_cpu_kernel(const HestonParams &p,
 	// combine statistics
 	Statistics stats;
 	Statistics stats_vec[size];
-	MPI_Gather(&local_stats, sizeof(local_stats), MPI_BYTE, 
-			&stats_vec, sizeof(local_stats), MPI_BYTE, 0, MPI_COMM_WORLD);
-	if (rank == 0) {
-		for (int i = 0; i < size; ++i) {
-			stats += stats_vec[i];
-		}
+	MPI_Allgather(&local_stats, sizeof(local_stats), MPI_BYTE, 
+			&stats_vec, sizeof(local_stats), MPI_BYTE, MPI_COMM_WORLD);
+	for (int i = 0; i < size; ++i) {
+		stats += stats_vec[i];
 	}
 	return stats;
 #else

@@ -17,6 +17,7 @@
 	#include "heston_ml_acc.hpp"
 #endif
 #include "json_helper.hpp"
+#include "observer.hpp"
 
 #include "json/json.h"
 
@@ -37,9 +38,10 @@ void print_duration(std::chrono::steady_clock::time_point start,
 
 void print_usage_and_exit(char *argv0) {
 	std::cerr << "Usage: " << argv0 << " -<algorithm> -<architecture> " <<
-			"params.json" << " [bitstream.json]" << std::endl;
+			"params.json" << " [bitstream.json [-observe]]" << std::endl;
 	std::cerr << "    -<algorithm>   : sl, ml or both" << std::endl;
 	std::cerr << "    -<architecture>: cpu, acc or both" << std::endl;
+	std::cerr << "    -observe       : enable extended output" << std::endl;
 #ifdef WITH_MPI
 	MPI_Finalize();
 #endif
@@ -48,7 +50,7 @@ void print_usage_and_exit(char *argv0) {
 
 
 void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml, 
-		bool &run_acc, bool &run_cpu) {
+		bool &run_acc, bool &run_cpu, bool &do_observe) {
 	if (argc < 3)
 		print_usage_and_exit(argv[0]);
 
@@ -78,8 +80,13 @@ void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml,
 	} else
 		print_usage_and_exit(argv[0]);
 
+	// observe
+	do_observe = (run_acc && argc == 6 && std::string(argv[5]) == "-observe");
+
 	// check bitfile json
-	if ((run_acc && argc != 5) || (!run_acc && argc != 4)) {
+	if ((run_acc && !do_observe && argc != 5) || 
+			(run_acc && do_observe && argc != 6) ||
+			(!run_acc && argc != 4)) {
 		print_usage_and_exit(argv[0]);
 	}
 }
@@ -91,13 +98,16 @@ int main(int argc, char *argv[]) {
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-	bool run_sl, run_ml, run_acc, run_cpu;
-	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu);
+	bool run_sl, run_ml, run_acc, run_cpu, do_observe;
+	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu, do_observe);
 	// read json files
 	Json::Value json = read_params(argv[3]);
 	Json::Value bitstream;
-	if (run_acc)
-		bitstream = read_params(argv[4]);
+	if (run_acc) {
+		std::string bitstream_path = argv[4];
+		bitstream = read_params(bitstream_path.c_str());
+		Observer::getInstance().enable(do_observe);
+	}
 
 	// heston params
 	HestonParamsSL sl_params = get_sl_params(json);
@@ -154,6 +164,9 @@ int main(int argc, char *argv[]) {
 	} else {
 		if (run_cpu && run_sl) {
 			heston_sl_cpu<float>(sl_params);
+		}
+		if (run_cpu && run_ml) {
+			heston_ml_cpu<float>(ml_params, false);
 		}
 	}
 	MPI_Finalize();
