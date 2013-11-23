@@ -9,7 +9,12 @@
 include_directories(.)
 include_directories(../externals)
 
-find_package (Threads)
+find_package(Threads REQUIRED)
+
+if (WITH_MPI)
+	find_package(MPI REQUIRED)
+	include_directories(${MPI_INCLUDE_PATH})
+endif()
 
 #### lib:iodev #######################################################
 set(HEADERS
@@ -22,9 +27,23 @@ set(SOURCE
 add_library(iodev STATIC ${SOURCE} ${HEADERS})
 
 
-#### lib:heston_sl_acc ##############################################
+#### lib:heston_common ##############################################
 set(HEADERS
-		heston_types.hpp
+		heston_common.hpp
+		heston_ml_both.hpp
+		observer.hpp
+)
+source_group("Header Files" FILES ${HEADERS})
+set(SOURCE
+		heston_common.cpp
+		heston_ml_both.cpp
+		observer.cpp
+)
+add_library(heston_common STATIC ${SOURCE} ${HEADERS})
+
+
+#### lib:heston_acc ##############################################
+set(HEADERS
 		heston_both_acc.hpp
 		heston_sl_acc.hpp
 		heston_ml_acc.hpp
@@ -37,20 +56,28 @@ set(SOURCE
 )
 add_library(heston_acc STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(heston_acc iodev)
+target_link_libraries(heston_acc heston_common)
 
 
-#### lib:heston_sl_cpu ##############################################
+#### lib:heston_cpu ##############################################
 set(HEADERS
-		heston_types.hpp
+		heston_both_cpu.hpp
 		heston_sl_cpu.hpp
+		heston_ml_cpu.hpp
 		../externals/ziggurat/gausszig_GSL.hpp
 )
 source_group("Header Files" FILES ${HEADERS})
 set(SOURCE
+		heston_both_cpu.cpp
 		heston_sl_cpu.cpp
+		heston_ml_cpu.cpp
 )
-add_library(heston_sl_cpu STATIC ${SOURCE} ${HEADERS})
-target_link_libraries(heston_sl_cpu ${CMAKE_THREAD_LIBS_INIT})
+add_library(heston_cpu STATIC ${SOURCE} ${HEADERS})
+target_link_libraries(heston_cpu ${CMAKE_THREAD_LIBS_INIT})
+if (WITH_MPI)
+	target_link_libraries(heston_cpu ${MPI_LIBRARIES})
+endif()
+target_link_libraries(heston_cpu heston_common)
 
 
 #### lib:json_helper ##############################################
@@ -63,6 +90,7 @@ set(SOURCE
 )
 add_library(json_helper STATIC ${SOURCE} ${HEADERS})
 target_link_libraries(json_helper jsoncpp)
+target_link_libraries(json_helper heston_common)
 
 
 
@@ -74,11 +102,21 @@ add_executable(init_rng init_rng.cpp)
 target_link_libraries(init_rng iodev json_helper)
 target_link_libraries(init_rng mt19937)
 
-#### exe:runner ##############################################
+#### exe:run_heston ##############################################
 add_executable(run_heston run_heston.cpp)
-target_link_libraries(run_heston json_helper heston_sl_cpu)
-if (UNIX)
+target_link_libraries(run_heston json_helper heston_cpu heston_common)
+if (WITH_ACC)
 	target_link_libraries(run_heston heston_acc)
+endif()
+if (WITH_MPI)
+	target_link_libraries(run_heston ${MPI_LIBRARIES})
+endif()
+
+#### exe:eval_heston ##############################################
+add_executable(eval_heston eval_heston.cpp)
+target_link_libraries(eval_heston json_helper heston_cpu heston_common)
+if (WITH_MPI)
+	target_link_libraries(run_heston ${MPI_LIBRARIES})
 endif()
 
 #### exe:read_fifo ######################################################
@@ -94,11 +132,13 @@ target_link_libraries(read_rng mt19937)
 add_executable(read_heston read_heston.cpp)
 target_link_libraries(read_heston iodev)
 
+### exe:perf_test ######################################################
+add_executable(perf_test perf_test.cpp)
+target_link_libraries(perf_test ${CMAKE_THREAD_LIBS_INIT})
 
 
 
 ### install targets ###
-
-INSTALL(TARGETS init_rng run_heston read_fifo read_rng read_heston
-		RUNTIME DESTINATION bin OPTIONAL)
+INSTALL(TARGETS init_rng run_heston eval_heston read_fifo read_rng read_heston
+		perf_test RUNTIME DESTINATION bin OPTIONAL)
 

@@ -1,0 +1,67 @@
+Memory usage: 114.441 MB
+Initialization:
+30000000 values processed in 16.6803 seconds (5.56011e-07 seconds / value)
+
+Simple Sum:
+30000000 values processed in 0.194238 seconds (6.47459e-09 seconds / value)
+Result: -261.956
+
+Simple Sum (2 cores):
+30000000 values processed in 0.472268 seconds (1.57423e-08 seconds / value)
+Result: -208.948 (15000000 values)
+Result: -52.9271 (15000000 values)
+
+Simple Sum Double:
+30000000 values processed in 0.40112 seconds (1.33707e-08 seconds / value)
+Result: -262.101
+
+Simple Sum Double (2 cores):
+30000000 values processed in 0.578843 seconds (1.92948e-08 seconds / value)
+Result: -209.124 (15000000 values)
+Result: -52.977 (15000000 values)
+
+Exponential:
+30000000 values processed in 6.76922 seconds (2.25641e-07 seconds / value)
+Result: 4.39443e+07
+
+Exponential (2 cores):
+30000000 values processed in 3.74622 seconds (1.24874e-07 seconds / value)
+Result: 2.39704e+07 (15000000 values)
+Result: 2.39604e+07 (15000000 values)
+
+Exponential Double:
+30000000 values processed in 10.2293 seconds (3.40975e-07 seconds / value)
+Result: 4.94666e+07
+
+Exponential Double (2 cores):
+30000000 values processed in 5.48144 seconds (1.82715e-07 seconds / value)
+Result: 2.4738e+07 (15000000 values)
+Result: 2.47285e+07 (15000000 values)
+
+Simple Barrier:
+30000000 values processed in 0.3983 seconds (1.32767e-08 seconds / value)
+Result: 1
+
+Simple Barrier (2 cores):
+30000000 values processed in 0.572834 seconds (1.90945e-08 seconds / value)
+Result: 1 (15000000 values)
+Result: 1 (15000000 values)
+
+Call:
+30000000 values processed in 0.193095 seconds (6.4365e-09 seconds / value)
+Result: 5.93167e+06
+
+Call (2 cores):
+30000000 values processed in 0.471623 seconds (1.57208e-08 seconds / value)
+Result: 2.96648e+06 (15000000 values)
+Result: 2.96722e+06 (15000000 values)
+
+Statistics:
+30000000 values processed in 0.193113 seconds (6.43711e-09 seconds / value)
+Result: 0.990792
+
+Statistics (2 cores):
+30000000 values processed in 0.472028 seconds (1.57343e-08 seconds / value)
+Result: 0.996819 (15000000 values)
+Result: 0.996851 (15000000 values)
+

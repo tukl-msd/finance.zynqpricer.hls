@@ -8,7 +8,7 @@
 
 set -e
 
-if [[ ! ( -f "bin/init_rng" && -f "bin/run_both" ) ]]; then
+if [[ ! ( -f "bin/init_rng" && -f "bin/run_heston" ) ]]; then
 	echo "ERROR: Cannot find binaries, please first run: ./clean-zynq-build.sh"
 	exit 1
 fi

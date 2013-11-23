@@ -6,12 +6,18 @@
 // 27. August 2013
 //
 
+#ifdef WITH_MPI
+	#include "mpi.h"
+#endif
+
 #include "heston_sl_cpu.hpp"
-#ifdef __unix__
-#include "heston_sl_acc.hpp"
-#include "heston_ml_acc.hpp"
+#include "heston_ml_cpu.hpp"
+#ifdef WITH_ACC
+	#include "heston_sl_acc.hpp"
+	#include "heston_ml_acc.hpp"
 #endif
 #include "json_helper.hpp"
+#include "observer.hpp"
 
 #include "json/json.h"
 
@@ -32,15 +38,19 @@ void print_duration(std::chrono::steady_clock::time_point start,
 
 void print_usage_and_exit(char *argv0) {
 	std::cerr << "Usage: " << argv0 << " -<algorithm> -<architecture> " <<
-			"params.json" << " [bitstream.json]" << std::endl;
+			"params.json" << " [bitstream.json [-observe]]" << std::endl;
 	std::cerr << "    -<algorithm>   : sl, ml or both" << std::endl;
 	std::cerr << "    -<architecture>: cpu, acc or both" << std::endl;
+	std::cerr << "    -observe       : enable extended output" << std::endl;
+#ifdef WITH_MPI
+	MPI_Finalize();
+#endif
 	exit(1);
 }
 
 
 void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml, 
-		bool &run_acc, bool &run_cpu) {
+		bool &run_acc, bool &run_cpu, bool &do_observe) {
 	if (argc < 3)
 		print_usage_and_exit(argv[0]);
 
@@ -70,21 +80,34 @@ void check_usage(int argc, char *argv[], bool &run_sl, bool &run_ml,
 	} else
 		print_usage_and_exit(argv[0]);
 
+	// observe
+	do_observe = (run_acc && argc == 6 && std::string(argv[5]) == "-observe");
+
 	// check bitfile json
-	if ((run_acc && argc != 5) || (!run_acc && argc != 4)) {
+	if ((run_acc && !do_observe && argc != 5) || 
+			(run_acc && do_observe && argc != 6) ||
+			(!run_acc && argc != 4)) {
 		print_usage_and_exit(argv[0]);
 	}
 }
 
 
 int main(int argc, char *argv[]) {
-	bool run_sl, run_ml, run_acc, run_cpu;
-	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu);
+#ifdef WITH_MPI
+	MPI_Init(&argc, &argv);
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	bool run_sl, run_ml, run_acc, run_cpu, do_observe;
+	check_usage(argc, argv, run_sl, run_ml, run_acc, run_cpu, do_observe);
 	// read json files
 	Json::Value json = read_params(argv[3]);
 	Json::Value bitstream;
-	if (run_acc)
-		bitstream = read_params(argv[4]);
+	if (run_acc) {
+		std::string bitstream_path = argv[4];
+		bitstream = read_params(bitstream_path.c_str());
+		Observer::getInstance().enable(do_observe);
+	}
 
 	// heston params
 	HestonParamsSL sl_params = get_sl_params(json);
@@ -93,12 +116,14 @@ int main(int argc, char *argv[]) {
 	auto ref = json["reference"];
 	double ref_price = ref["price"].asDouble();
 	double ref_price_precision = ref["precision"].asDouble();
-	std::cout << "REF   : result = " << ref_price << std::endl;
 
-
+#ifdef WITH_MPI
+	if (rank == 0) {
+#endif
 	// benchmark
+	std::cout << "REF   : result = " << ref_price << std::endl;
 	uint64_t steps = sl_params.step_cnt * sl_params.path_cnt;
-#ifdef __unix__
+#ifdef WITH_ACC
 	if (run_acc && run_sl) {
 		auto start_acc = std::chrono::steady_clock::now();
 		double result_acc = heston_sl_hw(bitstream, sl_params);
@@ -115,7 +140,7 @@ int main(int argc, char *argv[]) {
 	}
 #else
 	if (run_acc) {
-		std::cerr << "Running accelerator only supported under Linux" << 
+		std::cerr << "ERROR: recompile with accelerator support" << 
 				std::endl;
 		return -1;
 	}
@@ -128,9 +153,24 @@ int main(int argc, char *argv[]) {
 		std::cout << "CPU-SL: "; print_duration(start_cpu, end_cpu, steps);
 	}
 	if (run_cpu && run_ml) {
-		std::cout << "CPU-ML: not implemented yet" << std::endl;
+		auto start_cpu = std::chrono::steady_clock::now();
+		double result_cpu = heston_ml_cpu<float>(ml_params);
+		auto end_cpu = std::chrono::steady_clock::now();
+		std::cout << "CPU-ML: result = " << result_cpu << std::endl;
+		std::cout << "CPU-ML: "; print_duration(start_cpu, end_cpu, steps);
 	}
 
+#ifdef WITH_MPI
+	} else {
+		if (run_cpu && run_sl) {
+			heston_sl_cpu<float>(sl_params);
+		}
+		if (run_cpu && run_ml) {
+			heston_ml_cpu<float>(ml_params, false);
+		}
+	}
+	MPI_Finalize();
+#endif
 	return 0;
 }
 
