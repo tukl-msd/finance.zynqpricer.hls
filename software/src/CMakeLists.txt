@@ -134,6 +134,7 @@ target_link_libraries(read_heston iodev)
 
 ### exe:perf_test ######################################################
 add_executable(perf_test perf_test.cpp)
+target_link_libraries(perf_test ${CMAKE_THREAD_LIBS_INIT})
 
 
 
