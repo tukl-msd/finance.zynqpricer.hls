@@ -131,10 +131,12 @@ target_link_libraries(read_rng mt19937)
 add_executable(read_heston read_heston.cpp)
 target_link_libraries(read_heston iodev)
 
+### exe:perf_test ######################################################
+add_executable(perf_test perf_test.cpp)
+
 
 
 ### install targets ###
-
 INSTALL(TARGETS init_rng run_heston eval_heston read_fifo read_rng read_heston
-		RUNTIME DESTINATION bin OPTIONAL)
+		perf_test RUNTIME DESTINATION bin OPTIONAL)
 
