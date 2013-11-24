@@ -128,8 +128,11 @@ void heston_kernel_ml_log(const params_ml params, hls::stream<calc_t> &gaussian_
 					if (is_fine) {
 						// step fine
 						calc_t w_stock = gaussian_rn1.read();
-						calc_t w_vola = params.correlation * w_stock +
-								params.inv_correlation * gaussian_rn2.read();
+						calc_t w_stock_corr = params.correlation * w_stock;
+						#pragma HLS RESOURCE variable=w_stock_corr \
+								core=FMul_fulldsp
+						calc_t w_vola = w_stock_corr + params.inv_correlation *
+								gaussian_rn2.read();
 						n_state_fine = get_next_step(params, l_state_fine,
 								w_stock, w_vola, true);
 						n_state_coarse = l_state_coarse;
