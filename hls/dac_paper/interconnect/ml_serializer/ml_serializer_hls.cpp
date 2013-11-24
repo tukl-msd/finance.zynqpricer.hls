@@ -67,7 +67,7 @@ void ml_serializer(hls::stream<axis<32,1> > &s_fine,
 
 	axis<32,1> coarse;
 	if (s_coarse.read_nb(coarse)) {
-		if (buffer_write_index != buffer_read_index) {
+		if (buffer_write_index + 1 != buffer_read_index) {
 			buffer[buffer_write_index] = coarse;
 			++buffer_write_index;
 		}
