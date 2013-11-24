@@ -22,8 +22,15 @@ float max_0(float x) {
 
 typedef double calc_t;
 
-void pricing(hls::stream<float> in, hls::stream<calc_t> out,
-		hls::stream<calc_t> out2, float strike_price) {
+void stats(hls::stream<float> in, hls::stream<calc_t> out,
+		hls::stream<calc_t> out2) {
+	#pragma HLS interface ap_fifo port=in
+	#pragma HLS resource core=AXI4Stream variable=in
+	#pragma HLS interface ap_fifo port=out
+	#pragma HLS resource core=AXI4Stream variable=out
+	#pragma HLS interface ap_fifo port=out2
+	#pragma HLS resource core=AXI4Stream variable=out2
+	#pragma HLS interface ap_ctrl_none port=return
 
 	const int BLOCK = 64;
 	static calc_t res_sum[BLOCK];

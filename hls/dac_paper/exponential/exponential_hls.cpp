@@ -11,7 +11,7 @@
 #include <hls_stream.h>
 #include <hls_math.h>
 
-void to_exp_path(hls::stream<float> in, hls::stream<float> out, float K) {
+void to_exp_path(hls::stream<float> in, hls::stream<float> out) {
 	#pragma HLS interface ap_fifo port=in
 	#pragma HLS resource core=AXI4Stream variable=in
 	#pragma HLS interface ap_fifo port=out

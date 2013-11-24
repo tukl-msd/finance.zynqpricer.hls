@@ -20,11 +20,13 @@ float max_0(float x) {
 		return x;
 }
 
-void to_exp_path(hls::stream<float> in, hls::stream<float> out, float K) {
+void call(hls::stream<float> in, hls::stream<float> out, float K) {
 	#pragma HLS interface ap_fifo port=in
 	#pragma HLS resource core=AXI4Stream variable=in
 	#pragma HLS interface ap_fifo port=out
 	#pragma HLS resource core=AXI4Stream variable=out
+	#pragma HLS interface ap_none port=K
+	#pragma HLS resource core=AXI4LiteS variable=K
 	#pragma HLS interface ap_ctrl_none port=return
 
 	#pragma HLS PIPELINE II=1
