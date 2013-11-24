@@ -3,7 +3,7 @@
 // Microelectronic Systems Design Research Group
 //
 // Christian Brugger (brugger@eit.uni-kl.de)
-// 7. September 2013
+// 24. November 2013
 //
 // Using: Xilinx Vivado HLS 2013.2
 //
