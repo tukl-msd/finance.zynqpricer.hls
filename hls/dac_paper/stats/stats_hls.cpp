@@ -1,3 +1,12 @@
+//
+// Copyright (C) 2013 University of Kaiserslautern
+// Microelectronic Systems Design Research Group
+//
+// Christian Brugger (brugger@eit.uni-kl.de)
+// 23. November 2013
+//
+// Using: Xilinx Vivado HLS 2013.2
+//
 
 #include <hls_stream.h>
 #include <hls_math.h>
