@@ -17,6 +17,7 @@
 #include <map>
 #include <memory>
 #include <chrono>
+#include <vector>
 
 struct ObserverInstanceStats {
 	uint64_t path_cnt;
@@ -64,7 +65,7 @@ private:
 	std::vector<ObserverInstanceStats> stats;
 	std::vector<std::string> names;
 
-	const double print_wait_duration = 0.1; // in seconds
+	static const double print_wait_duration; // in seconds
 };
 
 #endif

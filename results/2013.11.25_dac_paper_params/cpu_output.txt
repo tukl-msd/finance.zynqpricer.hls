@@ -1,0 +1,104 @@
+# On my Desktop Computer
+# $> run_heston_sse2.exe -ml -cpu params_dac_paper.json
+REF   : result = 0.7487
+current_level 0 level 0 step_cnt 4 path_cnt 10000: <"mean": 4.52782, "variance": 75.4513, "cnt": 10000>
+current_level 0 level 0 step_cnt 4 path_cnt 6026101: <"mean": 4.62893, "variance": 78.1651, "cnt": 6026101>
+current_level 1 level 1 step_cnt 16 path_cnt 10000: <"mean": 0.401732, "variance": 42.9781, "cnt": 10000>
+current_level 1 level 0 step_cnt 4 path_cnt 9490113: <"mean": 4.62907, "variance": 78.1964, "cnt": 9490113>
+current_level 1 level 1 step_cnt 16 path_cnt 5746589: <"mean": 0.379157, "variance": 45.8389, "cnt": 5746589>
+current_level 2 level 2 step_cnt 64 path_cnt 10000: <"mean": 0.0905864, "variance": 21.4213, "cnt": 10000>
+current_level 2 level 0 step_cnt 4 path_cnt 13401902: <"mean": 4.63411, "variance": 78.2783, "cnt": 13401902>
+current_level 2 level 1 step_cnt 16 path_cnt 5318039: <"mean": 0.383283, "variance": 45.9022, "cnt": 5318039>
+current_level 2 level 2 step_cnt 64 path_cnt 3775544: <"mean": 0.0961975, "variance": 20.2007, "cnt": 3775544>
+current_level 3 level 3 step_cnt 256 path_cnt 10000: <"mean": 0.057186, "variance": 10.1898, "cnt": 10000>
+current_level 3 level 0 step_cnt 4 path_cnt 17705020: <"mean": 4.63397, "variance": 78.3001, "cnt": 17705020>
+current_level 3 level 1 step_cnt 16 path_cnt 6779366: <"mean": 0.378702, "variance": 45.9207, "cnt": 6779366>
+current_level 3 level 2 step_cnt 64 path_cnt 2139261: <"mean": 0.101516, "variance": 20.1806, "cnt": 2139261>
+current_level 3 level 3 step_cnt 256 path_cnt 2093824: <"mean": 0.0261147, "variance": 9.78477, "cnt": 2093824>
+current_level 4 level 4 step_cnt 1024 path_cnt 10000: <"mean": -0.00935289, "variance": 3.51279, "cnt": 10000>
+current_level 4 level 0 step_cnt 4 path_cnt 20870052: <"mean": 4.63077, "variance": 78.2116, "cnt": 20870052>
+current_level 4 level 1 step_cnt 16 path_cnt 7991511: <"mean": 0.380418, "variance": 45.8966, "cnt": 7991511>
+current_level 4 level 2 step_cnt 64 path_cnt 2648261: <"mean": 0.101661, "variance": 20.2522, "cnt": 2648261>
+current_level 4 level 3 step_cnt 256 path_cnt 880166: <"mean": 0.0247676, "variance": 9.97091, "cnt": 880166>
+current_level 4 level 4 step_cnt 1024 path_cnt 883872: <"mean": 0.00122929, "variance": 5.0391, "cnt": 883872>
+
+Control overhead is 0.145008 seconds
+
+Level 0 calculated 270012752 steps in 1.65809 seconds (1.62845e+008 steps / sec)
+Level 1 calculated 516910100 steps in 2.29513 seconds (2.2522e+008 steps / sec)
+Level 2 calculated 685845280 steps in 2.85216 seconds (2.40465e+008 steps / sec)
+Level 3 calculated 954876800 steps in 3.90722 seconds (2.44388e+008 steps / sec)
+Level 4 calculated 1144156160 steps in 4.65127 seconds (2.45988e+008 steps / sec)
+Calculated 3571801092 steps in 15.5089 seconds (2.30307e+008 steps / sec)
+
+Level 0 transmitted 270012756 bytes in 1.65809 seconds (1.62845e+008 bytes / sec)
+Level 1 transmitted 206764044 bytes in 2.29513 seconds (9.00881e+007 bytes / sec)
+Level 2 transmitted 68584532 bytes in 2.85216 seconds (2.40465e+007 bytes / sec)
+Level 3 transmitted 23871924 bytes in 3.90722 seconds (6.10969e+006 bytes / sec)
+Level 4 transmitted 7150980 bytes in 4.65127 seconds (1.53743e+006 bytes / sec)
+Calculated 576384236 bytes in 15.5089 seconds (3.71648e+007 bytes / sec)
+
+CPU-ML: result = 5.03653
+CPU-ML: Calculated 1000000000 steps in 15.5619 seconds (6.42595e+007 steps / sec)
+
+===========================================================================================================================================================
+
+
+# On my Desktop Computer
+# $> run_heston_sse2.exe -ml -cpu params_dac_paper.json
+
+REF   : result = 0.7487
+current_level 0 level 0 step_cnt 4 path_cnt 10000: <"mean": 4.55588, "variance": 77.6336, "cnt": 10000>
+current_level 0 level 0 step_cnt 4 path_cnt 6200691: <"mean": 4.63324, "variance": 78.2668, "cnt": 6200691>
+current_level 1 level 1 step_cnt 16 path_cnt 10000: <"mean": 0.485082, "variance": 46.7854, "cnt": 10000>
+current_level 1 level 0 step_cnt 4 path_cnt 9732484: <"mean": 4.63008, "variance": 78.1917, "cnt": 9732484>
+current_level 1 level 1 step_cnt 16 path_cnt 6153307: <"mean": 0.384126, "variance": 45.8591, "cnt": 6153307>
+current_level 2 level 2 step_cnt 64 path_cnt 10000: <"mean": 0.0992113, "variance": 19.1503, "cnt": 10000>
+current_level 2 level 0 step_cnt 4 path_cnt 12282522: <"mean": 4.63311, "variance": 78.265, "cnt": 12282522>
+current_level 2 level 1 step_cnt 16 path_cnt 4642924: <"mean": 0.379704, "variance": 45.9037, "cnt": 4642924>
+current_level 2 level 2 step_cnt 64 path_cnt 3481501: <"mean": 0.0952133, "variance": 20.028, "cnt": 3481501>
+current_level 3 level 3 step_cnt 256 path_cnt 10000: <"mean": 0.0535599, "variance": 10.1634, "cnt": 10000>
+current_level 3 level 0 step_cnt 4 path_cnt 18333391: <"mean": 4.62962, "variance": 78.193, "cnt": 18333391>
+current_level 3 level 1 step_cnt 16 path_cnt 7020345: <"mean": 0.383438, "variance": 45.8309, "cnt": 7020345>
+current_level 3 level 2 step_cnt 64 path_cnt 2397227: <"mean": 0.0967325, "variance": 20.1389, "cnt": 2397227>
+current_level 3 level 3 step_cnt 256 path_cnt 2087586: <"mean": 0.025224, "variance": 9.85174, "cnt": 2087586>
+current_level 4 level 4 step_cnt 1024 path_cnt 10000: <"mean": 0.00439107, "variance": 5.30111, "cnt": 10000>
+current_level 4 level 0 step_cnt 4 path_cnt 25793813: <"mean": 4.6327, "variance": 78.2429, "cnt": 25793813>
+current_level 4 level 1 step_cnt 16 path_cnt 9873484: <"mean": 0.384995, "variance": 45.9243, "cnt": 9873484>
+current_level 4 level 2 step_cnt 64 path_cnt 3273987: <"mean": 0.0981139, "variance": 20.0357, "cnt": 3273987>
+current_level 4 level 3 step_cnt 256 path_cnt 1112319: <"mean": 0.0260973, "variance": 9.77043, "cnt": 1112319>
+current_level 4 level 4 step_cnt 1024 path_cnt 1167218: <"mean": 0.00735082, "variance": 4.91197, "cnt": 1167218>
+
+Control overhead is 2.28213 seconds
+
+Level 0 calculated 289411604 steps in 1.92011 seconds (1.50727e+008 steps / sec)
+Level 1 calculated 554001200 steps in 2.66915 seconds (2.07557e+008 steps / sec)
+Level 2 calculated 733017200 steps in 3.5132 seconds (2.08647e+008 steps / sec)
+Level 3 calculated 1027169600 steps in 4.80727 seconds (2.1367e+008 steps / sec)
+Level 4 calculated 1506839040 steps in 6.9854 seconds (2.15713e+008 steps / sec)
+Calculated 4110438644 steps in 22.1773 seconds (1.85345e+008 steps / sec)
+
+Level 0 transmitted 289411608 bytes in 1.92011 seconds (1.50727e+008 bytes / sec)
+Level 1 transmitted 221600484 bytes in 2.66915 seconds (8.30228e+007 bytes / sec)
+Level 2 transmitted 73301724 bytes in 3.5132 seconds (2.08647e+007 bytes / sec)
+Level 3 transmitted 25679244 bytes in 4.80727 seconds (5.34175e+006 bytes / sec)
+Level 4 transmitted 9417748 bytes in 6.9854 seconds (1.3482e+006 bytes / sec)
+Calculated 619410808 bytes in 22.1773 seconds (2.793e+007 bytes / sec)
+
+CPU-ML: result = 5.04295
+CPU-ML: Calculated 1000000000 steps in 22.2333 seconds (4.49776e+007 steps / sec)
+
+
+===========================================================================================================================================================
+
+
+# On my Desktop Computer
+# $> run_heston_sse2.exe -sl -cpu params_dac_paper.json
+REF   : result = 5
+CPU-SL: result = 5.15285
+CPU-SL: Calculated 8000000000 steps in 37.3241 seconds (2.14339e+008 steps / sec)
+
+REF   : result = 5
+CPU-SL: result = 5.14696
+CPU-SL: Calculated 8000000000 steps in 37.2431 seconds (2.14805e+008 steps / sec)
+

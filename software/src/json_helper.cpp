@@ -20,8 +20,8 @@ Json::Value read_params(const char *filename) {
 	Json::Value root;
 	Json::Reader reader;
 	if (!reader.parse(file, root)) {
-		std::cerr << "Failed to parse parameter file" << std::endl
-				<< reader.getFormattedErrorMessages();
+		std::cerr << "Failed to parse parameter file: " << filename
+				<< std::endl << reader.getFormattedErrorMessages();
 		exit(-1);
 	}
 	return root;

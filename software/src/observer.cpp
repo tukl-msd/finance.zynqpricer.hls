@@ -14,6 +14,10 @@
 
 #include "observer.hpp"
 
+
+const double Observer::print_wait_duration = 0.1; // in seconds
+
+
 void Observer::update_fpga_config(std::string path) {
 	send("fpga_config", path);
 }
@@ -33,8 +37,9 @@ void Observer::clear_accelerators() {
 void Observer::setup_sl(unsigned index, HestonParamsSL sl_params, 
 		bool use_last_params) {
 	if (is_enabled) {
-		stats[index] = {sl_params.path_cnt, 0, false, 1, 
+		ObserverInstanceStats new_stats = {sl_params.path_cnt, 0, false, 1, 
 				std::chrono::steady_clock::now()};
+		stats[index] = new_stats;
 		Json::Value json;
 		if (!use_last_params) {
 			json = dump_sl_params(sl_params);
@@ -48,8 +53,9 @@ void Observer::setup_ml(unsigned index, HestonParamsML ml_params,
 		bool use_last_params) {
 	if (is_enabled) {
 		uint32_t scaling = (do_multilevel) ? 2 : 1;
-		stats[index] = {path_cnt * scaling, 0, false, 
+		ObserverInstanceStats new_stats = {path_cnt * scaling, 0, false, 
 				scaling, std::chrono::steady_clock::now()};
+		stats[index] = new_stats;
 		Json::Value json;
 		if (true) {
 			if (!use_last_params) {
