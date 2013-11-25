@@ -1,0 +1,107 @@
+# On my Laptop Computer (DELL Latitude E6430)
+# $> run_heston_avx.exe -ml -cpu params_dac_paper.json
+REF   : result = 5
+current_level 0 level 0 step_cnt 4 path_cnt 10000: <"mean": 4.70712, "variance": 79.2704, "cnt": 10000>
+current_level 0 level 0 step_cnt 4 path_cnt 6331630: <"mean": 4.62978, "variance": 78.1913, "cnt": 6331630>
+current_level 1 level 1 step_cnt 16 path_cnt 10000: <"mean": 0.302471, "variance": 48.0215, "cnt": 10000>
+current_level 1 level 0 step_cnt 4 path_cnt 9718231: <"mean": 4.63739, "variance": 78.3514, "cnt": 9718231>
+current_level 1 level 1 step_cnt 16 path_cnt 6282830: <"mean": 0.387212, "variance": 46.0315, "cnt": 6282830>
+current_level 2 level 2 step_cnt 64 path_cnt 10000: <"mean": 0.122318, "variance": 20.58, "cnt": 10000>
+current_level 2 level 0 step_cnt 4 path_cnt 12653237: <"mean": 4.6332, "variance": 78.2647, "cnt": 12653237>
+current_level 2 level 1 step_cnt 16 path_cnt 4716032: <"mean": 0.389559, "variance": 45.8872, "cnt": 4716032>
+current_level 2 level 2 step_cnt 64 path_cnt 3670381: <"mean": 0.0960031, "variance": 20.0265, "cnt": 3670381>
+current_level 3 level 3 step_cnt 256 path_cnt 10000: <"mean": 0.000883891, "variance": 10.4979, "cnt": 10000>
+current_level 3 level 0 step_cnt 4 path_cnt 18164081: <"mean": 4.63242, "variance": 78.2669, "cnt": 18164081>
+current_level 3 level 1 step_cnt 16 path_cnt 6953159: <"mean": 0.38203, "variance": 45.9538, "cnt": 6953159>
+current_level 3 level 2 step_cnt 64 path_cnt 2247509: <"mean": 0.108545, "variance": 20.271, "cnt": 2247509>
+current_level 3 level 3 step_cnt 256 path_cnt 2135867: <"mean": 0.0232393, "variance": 9.89535, "cnt": 2135867>
+current_level 4 level 4 step_cnt 1024 path_cnt 10000: <"mean": 0.0216834, "variance": 6.47144, "cnt": 10000>
+current_level 4 level 0 step_cnt 4 path_cnt 28303520: <"mean": 4.63213, "variance": 78.2477, "cnt": 28303520>
+current_level 4 level 1 step_cnt 16 path_cnt 10843781: <"mean": 0.381782, "variance": 45.8905, "cnt": 10843781>
+current_level 4 level 2 step_cnt 64 path_cnt 3601256: <"mean": 0.097863, "variance": 20.0561, "cnt": 3601256>
+current_level 4 level 3 step_cnt 256 path_cnt 1195970: <"mean": 0.0238811, "variance": 9.80981, "cnt": 1195970>
+current_level 4 level 4 step_cnt 1024 path_cnt 1341073: <"mean": 0.00548003, "variance": 5.02313, "cnt": 1341073>
+
+Control overhead is 18.282 seconds
+
+Level 0 calculated 300722796 steps in 3.297 seconds (9.12109e+007 steps / sec)
+Level 1 calculated 576116040 steps in 4.84394 seconds (1.18935e+008 steps / sec)
+Level 2 calculated 762331680 steps in 6.09399 seconds (1.25096e+008 steps / sec)
+Level 3 calculated 1069387840 steps in 7.93782 seconds (1.34721e+008 steps / sec)
+Level 4 calculated 1729373440 steps in 13.8131 seconds (1.25199e+008 steps / sec)
+Calculated 4437931796 steps in 54.2678 seconds (8.17784e+007 steps / sec)
+
+Level 0 transmitted 300722800 bytes in 3.297 seconds (9.12109e+007 bytes / sec)
+Level 1 transmitted 230446420 bytes in 4.84394 seconds (4.75741e+007 bytes / sec)
+Level 2 transmitted 76233172 bytes in 6.09399 seconds (1.25096e+007 bytes / sec)
+Level 3 transmitted 26734700 bytes in 7.93782 seconds (3.36802e+006 bytes / sec)
+Level 4 transmitted 10808588 bytes in 13.8131 seconds (782491 bytes / sec)
+Calculated 644945680 bytes in 54.2678 seconds (1.18845e+007 bytes / sec)
+
+CPU-ML: result = 5.04394
+CPU-ML: Calculated 8000000000 steps in 54.3146 seconds (1.4729e+008 steps / sec)
+
+
+===========================================================================================================================================================
+
+# On my Laptop Computer (DELL Latitude E6430)
+# $> run_heston_avx.exe -ml -cpu params_dac_paper.json
+REF   : result = 5
+current_level 0 level 0 step_cnt 4 path_cnt 10000: <"mean": 4.51594, "variance": 75.3256, "cnt": 10000>
+current_level 0 level 0 step_cnt 4 path_cnt 6016052: <"mean": 4.63571, "variance": 78.3056, "cnt": 6016052>
+current_level 1 level 1 step_cnt 16 path_cnt 10000: <"mean": 0.344286, "variance": 41.4377, "cnt": 10000>
+current_level 1 level 0 step_cnt 4 path_cnt 9351827: <"mean": 4.63014, "variance": 78.1675, "cnt": 9351827>
+current_level 1 level 1 step_cnt 16 path_cnt 5583473: <"mean": 0.383618, "variance": 45.9651, "cnt": 5583473>
+current_level 2 level 2 step_cnt 64 path_cnt 10000: <"mean": 0.157894, "variance": 20.5367, "cnt": 10000>
+current_level 2 level 0 step_cnt 4 path_cnt 13298161: <"mean": 4.63779, "variance": 78.3509, "cnt": 13298161>
+current_level 2 level 1 step_cnt 16 path_cnt 5396760: <"mean": 0.388151, "variance": 45.7913, "cnt": 5396760>
+current_level 2 level 2 step_cnt 64 path_cnt 3663386: <"mean": 0.0958458, "variance": 20.001, "cnt": 3663386>
+current_level 3 level 3 step_cnt 256 path_cnt 10000: <"mean": -0.0157354, "variance": 9.43353, "cnt": 10000>
+current_level 3 level 0 step_cnt 4 path_cnt 17228870: <"mean": 4.62909, "variance": 78.1825, "cnt": 17228870>
+current_level 3 level 1 step_cnt 16 path_cnt 6580633: <"mean": 0.383982, "variance": 45.874, "cnt": 6580633>
+current_level 3 level 2 step_cnt 64 path_cnt 2127756: <"mean": 0.105619, "variance": 20.3027, "cnt": 2127756>
+current_level 3 level 3 step_cnt 256 path_cnt 1981954: <"mean": 0.0280358, "variance": 9.92222, "cnt": 1981954>
+current_level 4 level 4 step_cnt 1024 path_cnt 10000: <"mean": -0.0136851, "variance": 5.32786, "cnt": 10000>
+current_level 4 level 0 step_cnt 4 path_cnt 26599295: <"mean": 4.63294, "variance": 78.2278, "cnt": 26599295>
+current_level 4 level 1 step_cnt 16 path_cnt 10187659: <"mean": 0.381106, "variance": 45.8771, "cnt": 10187659>
+current_level 4 level 2 step_cnt 64 path_cnt 3388783: <"mean": 0.098919, "variance": 20.163, "cnt": 3388783>
+current_level 4 level 3 step_cnt 256 path_cnt 1235048: <"mean": 0.0234237, "variance": 9.85261, "cnt": 1235048>
+current_level 4 level 4 step_cnt 1024 path_cnt 1172483: <"mean": 0.0065113, "variance": 4.75176, "cnt": 1172483>
+
+Control overhead is 0.10938 seconds
+
+Level 0 calculated 290016820 steps in 2.85949 seconds (1.01423e+008 steps / sec)
+Level 1 calculated 555170500 steps in 4.23455 seconds (1.31105e+008 steps / sec)
+Level 2 calculated 735194000 steps in 5.17208 seconds (1.42147e+008 steps / sec)
+Level 3 calculated 1032640640 steps in 6.98465 seconds (1.47844e+008 steps / sec)
+Level 4 calculated 1513578240 steps in 10.6723 seconds (1.41823e+008 steps / sec)
+Calculated 4126600200 steps in 30.0324 seconds (1.37405e+008 steps / sec)
+
+Level 0 transmitted 290016824 bytes in 2.85949 seconds (1.01423e+008 bytes / sec)
+Level 1 transmitted 222068204 bytes in 4.23455 seconds (5.2442e+007 bytes / sec)
+Level 2 transmitted 73519404 bytes in 5.17208 seconds (1.42147e+007 bytes / sec)
+Level 3 transmitted 25816020 bytes in 6.98465 seconds (3.69611e+006 bytes / sec)
+Level 4 transmitted 9459868 bytes in 10.6723 seconds (886395 bytes / sec)
+Calculated 620880320 bytes in 30.0324 seconds (2.06737e+007 bytes / sec)
+
+CPU-ML: result = 5.04626
+CPU-ML: Calculated 8000000000 steps in 30.0793 seconds (2.65963e+008 steps / sec)
+
+
+===========================================================================================================================================================
+
+# On my Laptop Computer
+# $> run_heston_avx.exe -sl -cpu params_dac_paper.json
+D:\_share\data\Projekte\2013.08_Zynq_Linux\zynqheston\results\2013.11.25_dac_pape
+REF   : result = 5
+CPU-SL: result = 5.14868
+CPU-SL: Calculated 8000000000 steps in 62.2212 seconds (1.28573e+008 steps / sec)
+
+
+===========================================================================================================================================================
+
+# On my Laptop Computer
+# $> run_heston_avx.exe -sl -cpu params_dac_paper.json
+REF   : result = 5
+CPU-SL: result = 5.14514
+CPU-SL: Calculated 8000000000 steps in 68.5652 seconds (1.16677e+008 steps / sec)
