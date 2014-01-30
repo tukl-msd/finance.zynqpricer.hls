@@ -108,7 +108,7 @@ Json::Value dump_sl_params(HestonParamsSL params) {
 	// simulation params
 	Json::Value simulation;
 	simulation["step_cnt"] = params.step_cnt;
-	simulation["path_cnt"] = params.path_cnt;
+	simulation["path_cnt"] = (Json::UInt64) params.path_cnt;
 	json["simulation_sl"] = simulation;
 	return json;
 }
