@@ -84,7 +84,7 @@ void Observer::process_path_done(unsigned index) {
 	std::chrono::duration<float> duration = 
 			std::chrono::steady_clock::now() - stat.last_printing;
 	if (stat.is_done || (duration.count() > print_wait_duration)) {
-		uint64_t real_path_done = stat.path_done / stat.scaling;
+		Json::UInt64 real_path_done = stat.path_done / stat.scaling;
 		stat.last_printing = std::chrono::steady_clock::now();
 		send_from("new_path", names[index], real_path_done);
 	}
