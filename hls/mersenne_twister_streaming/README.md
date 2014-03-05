@@ -2,7 +2,7 @@ Mersenne Twister - Random number generator
 ==========================================
 
 ---
-Verified to work with Vivado HLS 2013.4. Use this version from now on.
+Info: Verified to work with Vivado HLS 2013.4. Use this version from now on.
 ---
 
 Generate uniform distributed random numbers used for Monte Carlo simulations.
