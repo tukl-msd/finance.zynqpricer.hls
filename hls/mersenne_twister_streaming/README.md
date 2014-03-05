@@ -2,18 +2,7 @@ Mersenne Twister - Random number generator
 ==========================================
 
 ---
-
-**Warning:** *this version is broken in Vivado HLS 2013.2.*
-*Use the [array version](../mersenne_twister_array) instead.*
-
-*The design uses hls::stream which are buggy, see [this post][1]*
-*on the Xilinx forum for more information about this issue.*
-*The issue will be fixed in the next version of Vivado HLS.*
-*Since the stream based Mersenne Twister is much easier to read*
-*it will remain here in the original form.*
-
-[1]: http://forums.xilinx.com/t5/Design-Tools-Others/HLS-Compiler-Bug-Streaming-Based-Design/td-p/349833
-
+Verified to work with Vivado HLS 2013.4. Use this version from now on.
 ---
 
 Generate uniform distributed random numbers used for Monte Carlo simulations.
@@ -32,3 +21,6 @@ Generate uniform distributed random numbers used for Monte Carlo simulations.
 ```
 
 The seed can be configured over the memmory mapped AXI slave interface.
+
+To generate a continous stream of random numbers it is necessary to 
+to also set the auto_restart bit when starting this core.
