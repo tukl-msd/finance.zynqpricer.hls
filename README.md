@@ -48,3 +48,5 @@ Zynq Demo
 ---------
 
 The Zynq demo can be found in the [software folder](software). Additional instructions can be found there.
+
+![Zynq Demo][finance_zynq_demo.png]
