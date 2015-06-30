@@ -1,0 +1,21 @@
+sudo taskset -c 1 bin/run_heston -ml -acc parameters/params_zynq_demo_observer_2.json ../bitstream/heston_ml_5x.json
+# with epsilon = 0.009
+
+	Level 0 calculated 17822720 steps in 2.39177 seconds (7.45169e+06 steps / sec)
+	Level 1 calculated 99635200 steps in 7.42839 seconds (1.34128e+07 steps / sec)
+	Level 2 calculated 276275200 steps in 5.16222 seconds (5.35187e+07 steps / sec)
+	Level 3 calculated 654131200 steps in 3.05925 seconds (2.13821e+08 steps / sec)
+	Level 4 calculated 1551564800 steps in 3.10964 seconds (4.98953e+08 steps / sec)
+	Calculated 2599429120 steps in 21.1564 seconds (1.22867e+08 steps / sec)
+
+	Level 0 transmitted 17822724 bytes in 2.39177 seconds (7.45169e+06 bytes / sec)
+	Level 1 transmitted 39854084 bytes in 7.42839 seconds (5.36511e+06 bytes / sec)
+	Level 2 transmitted 27627524 bytes in 5.16222 seconds (5.35187e+06 bytes / sec)
+	Level 3 transmitted 16353284 bytes in 3.05925 seconds (5.34553e+06 bytes / sec)
+	Level 4 transmitted 9697284 bytes in 3.10964 seconds (3.11846e+06 bytes / sec)
+	Calculated 111354900 bytes in 21.1564 seconds (5.26342e+06 bytes / sec)
+
+	ACC-ML: result = 6.18065
+	ACC-ML: Calculated 0 steps in 21.1576 seconds (0 steps / sec)
+
+From Level 0 => 537 ns / payoff
