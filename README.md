@@ -38,6 +38,7 @@ Repository Structure
 - hls: Accelerators written with Vivado HLS
 - ip: Packed HLS accelerators, that can be instanciated and synthesized 
   with Vivado
+- linux: Kernels, boot images and discription on how to install linux
 - results: deliverables of this project
 - software: linux drivers for the accelerators and optimized CPU 
   implementations for heston
